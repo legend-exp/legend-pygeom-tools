@@ -1,0 +1,84 @@
+name: pygeomtools
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "releases/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 3
+
+jobs:
+  build-and-test:
+    name: Test pygeomtools with Python
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        os: [ubuntu-latest, macOS-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install non-python (homebrew) dependencies
+        if: ${{ matrix.os == 'macOS-latest' }}
+        run: |
+          brew install opencascade cgal gmp mpfr boost
+      - name: Get dependencies and install pygeomtools
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install --upgrade .[test]
+      - name: Run unit tests
+        run: |
+          python -m pytest
+
+  test-coverage:
+    name: Calculate and upload test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Generate Report
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install --upgrade .[test]
+          python -m pytest --cov=pygeomtools --cov-report=xml
+      - name: Upload Coverage to codecov.io
+        uses: codecov/codecov-action@v5
+
+  build-docs:
+    name: Build documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Setup build environment
+        run: |
+          sudo apt-get install -y pandoc
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install --upgrade .[all]
+      - name: Build docs for current ref
+        run: |
+          cd docs
+          make clean
+          make
