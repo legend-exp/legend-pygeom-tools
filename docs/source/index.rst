@@ -23,7 +23,7 @@ On a physical volume instance, you can attach a ``pygeom_active_dector``, e.g.
 Adjusting the visualization
 ---------------------------
 
-On a logical volume instance, you can set `pygeom_color_rgba`, e.g.
+On a logical volume instance, you can set ``pygeom_color_rgba``, e.g.
 
 .. code:: python
 
