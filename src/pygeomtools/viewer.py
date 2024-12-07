@@ -1,22 +1,10 @@
-"""An opionionated wrapper around :class:`pyg4ometry.visualization.VtkViewerNew`.
-
-=================  ===============
-Keyboard shortcut  Description
-=================  ===============
-``e``              exit viewer
-``a``              show/hide axes
-``u``              side view
-``t``              view from top
-``s``              save screenshot
-``+``              zoom in
-``-``              zoom out
-=================  ===============
-"""
+"""An opionionated wrapper around :class:`pyg4ometry.visualization.VtkViewerNew`."""
 
 from __future__ import annotations
 
 import argparse
 import logging
+from pathlib import Path
 
 import pyg4ometry.geant4 as g4
 import vtk
@@ -24,12 +12,16 @@ from pyg4ometry import config as meshconfig
 from pyg4ometry import gdml
 from pyg4ometry import visualisation as pyg4vis
 
+from .utils import load_dict
 from .visualization import load_color_auxvals_recursive
 
 log = logging.getLogger(__name__)
 
 
-def visualize(registry: g4.Registry) -> None:
+def visualize(registry: g4.Registry, scenes: dict | None = None) -> None:
+    if scenes is None:
+        scenes = {}
+
     v = pyg4vis.VtkViewerColouredNew()
     v.addLogicalVolume(registry.worldVolume)
 
@@ -37,30 +29,36 @@ def visualize(registry: g4.Registry) -> None:
     registry.worldVolume.pygeom_color_rgba = False  # hide the wireframe of the world.
     _color_recursive(registry.worldVolume, v)
 
-    # v.addClipper([0, 0, 0], [1, 0, 0], bClipperCloseCuts=False)
+    for clip in scenes.get("clipper", []):
+        v.addClipper(clip["origin"], clip["normal"], bClipperCloseCuts=False)
 
     v.buildPipelinesAppend()
     v.addAxes(length=5000)
     v.axes[0].SetVisibility(False)  # hide axes by default.
 
     # override the interactor style.
-    v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v)
+    v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
     v.interactorStyle.SetDefaultRenderer(v.ren)
     v.iren.SetInteractorStyle(v.interactorStyle)
 
     # set some defaults
-    _set_camera(v, up=(1, 0, 0), pos=(0, 0, +20000))
+    if "default" in scenes:
+        sc = scenes["default"]
+        _set_camera(v, up=sc.get("up"), pos=sc.get("camera"), focus=sc.get("focus"))
+    else:
+        _set_camera(v, up=(1, 0, 0), pos=(0, 0, +20000))
 
     v.view()
 
 
 class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
-    def __init__(self, renderer, iren, vtkviewer):
+    def __init__(self, renderer, iren, vtkviewer, scenes):
         self.AddObserver("KeyPressEvent", self.keypress)
 
         self.ren = renderer
         self.iren = iren
         self.vtkviewer = vtkviewer
+        self.scenes = scenes
 
     def keypress(self, _obj, _event):
         # predefined: "e"xit
@@ -78,11 +76,22 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
         if key == "t":  # "t"op
             _set_camera(self, up=(1, 0, 0), pos=(0, 0, +20000))
 
-        if key == "F1":
-            _set_camera(self, up=(0.55, 0, 0.82), pos=(-14000, 0, 8000))
+        sc_index = 1
+        for sc in self.scenes.get("scenes", []):
+            if key == f"F{sc_index}":
+                _set_camera(
+                    self, up=sc.get("up"), pos=sc.get("camera"), focus=sc.get("focus")
+                )
+                sc_index += 1
 
         if key == "s":  # "s"ave
             _export_png(self.vtkviewer)
+
+        if key == "i":
+            cam = self.ren.GetActiveCamera()
+            print(f"- focus: {list(cam.GetFocalPoint())}")  # noqa: T201
+            print(f"  up: {list(cam.GetViewUp())}")  # noqa: T201
+            print(f"  camera: {list(cam.GetPosition())}")  # noqa: T201
 
         if key == "plus":
             _set_camera(self, dolly=1.1)
@@ -90,8 +99,10 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
             _set_camera(self, dolly=0.9)
 
 
-def _set_camera(v, up=None, pos=None, dolly=None):
+def _set_camera(v, focus=None, up=None, pos=None, dolly=None):
     cam = v.ren.GetActiveCamera()
+    if focus is not None:
+        cam.SetFocalPoint(*focus)
     if up is not None:
         cam.SetViewUp(*up)
     if pos is not None:
@@ -103,14 +114,25 @@ def _set_camera(v, up=None, pos=None, dolly=None):
     v.ren.GetRenderWindow().Render()
 
 
-def _export_png(v, fileName="scene.png"):
+def _export_png(v, file_name="scene.png"):
     ifil = vtk.vtkWindowToImageFilter()
     ifil.SetInput(v.renWin)
     ifil.ReadFrontBufferOff()
     ifil.Update()
 
+    # get a non-colliding file name.
+    p = Path(file_name)
+    stem = p.stem
+    idx = 0
+    while p.exists():
+        p = p.with_stem(f"{stem}_{idx}")
+        idx += 1
+        if idx > 1000:
+            msg = "could not find file name"
+            raise ValueError(msg)
+
     png = vtk.vtkPNGWriter()
-    png.SetFileName("./" + fileName)
+    png.SetFileName(str(p.absolute()))
     png.SetInputConnection(ifil.GetOutputPort())
     png.Write()
 
@@ -154,6 +176,11 @@ def vis_gdml_cli() -> None:
         action="store_true",
         help="""use finer meshing settings""",
     )
+    parser.add_argument(
+        "--scene",
+        "-s",
+        help="""scene definition file.""",
+    )
 
     parser.add_argument(
         "filename",
@@ -167,12 +194,15 @@ def vis_gdml_cli() -> None:
     if args.debug:
         logging.root.setLevel(logging.DEBUG)
 
-    if args.fine:
+    scene = {}
+    if args.scene:
+        scene = load_dict(args.scene)
+
+    if scene.get("fine_mesh", args.fine):
         meshconfig.setGlobalMeshSliceAndStack(100)
 
-    msg = f"loading GDML geometry from {args.filename}"
-    log.info(msg)
+    log.info("loading GDML geometry from %s", args.filename)
     registry = gdml.Reader(args.filename).getRegistry()
 
     log.info("visualizing...")
-    visualize(registry)
+    visualize(registry, scene)
