@@ -8,12 +8,12 @@ On a physical volume instance, you can attach a ``pygeom_active_dector``, e.g.
 
 .. code:: python
 
-   from pygeomtools import detectors
+   from pygeomtools import RemageDetectorInfo
 
    pv = g4.PhysicalVolume(...)
 
    # attach an active detector to this physical volume.
-   lv.pygeom_active_dector = detectors.RemageDetectorInfo(
+   lv.pygeom_active_dector = RemageDetectorInfo(
        "optical",  # detector type. The available options are defined by remage.
        1,  # detector id in remage.
        {"some": "metadata"},  # user-defined data (optional) that is stored into GDML.
