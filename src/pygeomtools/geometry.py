@@ -1,3 +1,5 @@
+"""Helper functions for geometry construction."""
+
 from __future__ import annotations
 
 from pyg4ometry import geant4
@@ -41,7 +43,9 @@ def check_registry_sanity(v, registry: geant4.Registry) -> None:
     elif isinstance(v, geant4.SurfaceBase):
         check_registry_sanity(v.surface_property, registry)
 
-    elif isinstance(v, (geant4.solid.OpticalSurface, geant4.solid.SolidBase, geant4.Element)):
+    elif isinstance(
+        v, (geant4.solid.OpticalSurface, geant4.solid.SolidBase, geant4.Element)
+    ):
         pass
 
     else:
