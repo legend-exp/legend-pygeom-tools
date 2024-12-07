@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 
 import pyg4ometry
+from legendmeta import AttrsDict
 from pyg4ometry import geant4 as g4
 
 import pygeomtools
@@ -62,7 +63,10 @@ def test_detector_info(tmp_path):
     assert detectors.get_sensvol_metadata(registry, "det2") == {
         "other": "other metadata"
     }
-    assert detectors.get_sensvol_metadata(registry, "det1") == {"some": "metadata"}
+    det1meta = detectors.get_sensvol_metadata(registry, "det1")
+    assert det1meta == {"some": "metadata"}
+    assert det1meta.some == "metadata"
+    assert isinstance(det1meta, AttrsDict)
     assert detectors.get_sensvol_metadata(registry, "scint1") is None
     sensvols = detectors.get_all_sensvols(registry)
     assert set(sensvols.keys()) == {"det2", "det1", "scint1", "scint2"}

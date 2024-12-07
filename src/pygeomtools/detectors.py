@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Literal
 
 import pyg4ometry.geant4 as g4
+from legendmeta import AttrsDict
 from pyg4ometry.gdml.Defines import Auxiliary
 
 log = logging.getLogger(__name__)
@@ -104,7 +105,7 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
                 )
 
 
-def get_sensvol_metadata(registry: g4.Registry, name: str) -> object | None:
+def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
     """Load metadata attached to the given sensitive volume."""
     auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector_meta"]
     if auxs == []:
@@ -116,7 +117,7 @@ def get_sensvol_metadata(registry: g4.Registry, name: str) -> object | None:
     if meta_auxs == []:
         return None
     assert len(meta_auxs) == 1
-    return json.loads(meta_auxs[0].auxvalue)
+    return AttrsDict(json.loads(meta_auxs[0].auxvalue))
 
 
 def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
@@ -126,7 +127,9 @@ def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
         meta_auxs = {}
     else:
         assert len(auxs) == 1
-        meta_auxs = {aux.auxtype: json.loads(aux.auxvalue) for aux in auxs[0].subaux}
+        meta_auxs = {
+            aux.auxtype: AttrsDict(json.loads(aux.auxvalue)) for aux in auxs[0].subaux
+        }
 
     detmapping = {}
     type_auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector"]
