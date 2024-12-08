@@ -1,6 +1,6 @@
 # GDML viewer
 
-```
+```text
 usage: legend-pygeom-vis [-h] [--verbose] [--debug] [--fine] [--scene SCENE] [--add-points ADD_POINTS]
                          [--add-points-columns ADD_POINTS_COLUMNS]
                          filename
