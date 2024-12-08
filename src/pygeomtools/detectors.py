@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Literal
 
 import pyg4ometry.geant4 as g4
+from legendmeta import AttrsDict
 from pyg4ometry.gdml.Defines import Auxiliary
 
 log = logging.getLogger(__name__)
@@ -78,17 +79,9 @@ def generate_detector_macro(registry: g4.Registry, filename: str) -> None:
 def write_detector_auxvals(registry: g4.Registry) -> None:
     """Append an auxiliary structure, storing the sensitive detector volume information.
 
-    The structure is a nested dict, stored as follows (read ``auxtype`: ``auxvalue``):
-
-    * "RMG_detector": ``det_type`` (see :class:`RemageDetectorInfo`)
-        * ``physvol->name``: ``det_uid``
-        * [...repeat...]
-    * [...repeat...]
-    * "RMG_detector_meta": ""
-        * ``physvol->name``: ``json(metadata)``
-        * [...repeat...]
+    .. note::
+        see <metadata> for a reference
     """
-
     written_pvs = set()
     group_it = groupby(walk_detectors(registry), lambda d: d[1].detector_type)
 
@@ -112,7 +105,7 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
                 )
 
 
-def get_sensvol_metadata(registry: g4.Registry, name: str) -> object | None:
+def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
     """Load metadata attached to the given sensitive volume."""
     auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector_meta"]
     if auxs == []:
@@ -124,4 +117,30 @@ def get_sensvol_metadata(registry: g4.Registry, name: str) -> object | None:
     if meta_auxs == []:
         return None
     assert len(meta_auxs) == 1
-    return json.loads(meta_auxs[0].auxvalue)
+    return AttrsDict(json.loads(meta_auxs[0].auxvalue))
+
+
+def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
+    """Load all registered sensitive detectors with their metadata."""
+    auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector_meta"]
+    if auxs == []:
+        meta_auxs = {}
+    else:
+        assert len(auxs) == 1
+        meta_auxs = {
+            aux.auxtype: AttrsDict(json.loads(aux.auxvalue)) for aux in auxs[0].subaux
+        }
+
+    detmapping = {}
+    type_auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector"]
+    for type_aux in type_auxs:
+        for det_aux in type_aux.subaux:
+            detmapping[det_aux.auxtype] = RemageDetectorInfo(
+                type_aux.auxvalue, int(det_aux.auxvalue), meta_auxs.get(det_aux.auxtype)
+            )
+
+    if set(meta_auxs.keys()) - set(detmapping.keys()) != set():
+        msg = "invalid GDML auxval structure"
+        raise RuntimeError(msg)
+
+    return detmapping

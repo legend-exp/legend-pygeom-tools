@@ -6,8 +6,8 @@ from pyg4ometry import geant4
 
 
 def check_registry_sanity(v, registry: geant4.Registry) -> None:
-    """Check recursively if all children in the volume and material tree have the correct registry instance
-    attached.
+    """Check recursively if all children in the volume and material tree have the correct
+    registry instance attached.
 
     Parameters
     ==========
@@ -15,6 +15,12 @@ def check_registry_sanity(v, registry: geant4.Registry) -> None:
         object to recursively check to have the right registry.
     registry
         the expected registry to compare against
+
+    Note
+    ====
+    This function prevents an easy-to-miss problem using pyg4ometry: If different (or no)
+    registries are used inside an object structure, this might lead to unexpected results
+    in GDML output.
     """
     if not isinstance(v, geant4.Registry) and v.registry is not registry:
         msg = f"found invalid registry instance on {v}"
