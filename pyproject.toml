@@ -33,7 +33,9 @@ dependencies = [
     "numpy",
     "pyg4ometry",
     "pylegendmeta>=v0.9.0",
+    "legend-pydataobj",
     "pyyaml",
+    "pint",
 ]
 dynamic = [
     "version",

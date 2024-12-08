@@ -1,7 +1,9 @@
 # GDML viewer
 
 ```
-usage: legend-pygeom-vis [-h] [--verbose] [--debug] [--fine] [--scene SCENE] filename
+usage: legend-pygeom-vis [-h] [--verbose] [--debug] [--fine] [--scene SCENE] [--add-points ADD_POINTS]
+                         [--add-points-columns ADD_POINTS_COLUMNS]
+                         filename
 
 legend-pygeom-vis command line interface
 
@@ -15,6 +17,11 @@ options:
   --fine                use finer meshing settings
   --scene SCENE, -s SCENE
                         scene definition file.
+  --add-points ADD_POINTS
+                        load points from LH5 file
+  --add-points-columns ADD_POINTS_COLUMNS
+                        columns in the point file stp/vertices:xloc,yloc,zloc
+
 ```
 
 ## Keyboard shortcuts
@@ -25,6 +32,7 @@ options:
 - `t` view from top
 - `s` save screenshot
 - `i` dump current camera info (focal point, up vector, position)
+- `p` toggle display of loaded points (see `--add-points`)
 - `F<n>` switch to scene n
 - `+` zoom in
 - `-` zoom out
