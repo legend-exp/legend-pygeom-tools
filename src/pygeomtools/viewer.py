@@ -27,7 +27,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None) -> None:
 
     load_color_auxvals_recursive(registry.worldVolume)
     registry.worldVolume.pygeom_color_rgba = False  # hide the wireframe of the world.
-    _color_recursive(registry.worldVolume, v)
+    _color_recursive(registry.worldVolume, v, scenes.get("color_overrides", {}))
 
     for clip in scenes.get("clipper", []):
         v.addClipper(clip["origin"], clip["normal"], bClipperCloseCuts=False)
@@ -99,7 +99,7 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
             _set_camera(self, dolly=0.9)
 
 
-def _set_camera(v, focus=None, up=None, pos=None, dolly=None):
+def _set_camera(v, focus=None, up=None, pos=None, dolly=None) -> None:
     cam = v.ren.GetActiveCamera()
     if focus is not None:
         cam.SetFocalPoint(*focus)
@@ -114,7 +114,7 @@ def _set_camera(v, focus=None, up=None, pos=None, dolly=None):
     v.ren.GetRenderWindow().Render()
 
 
-def _export_png(v, file_name="scene.png"):
+def _export_png(v, file_name="scene.png") -> None:
     ifil = vtk.vtkWindowToImageFilter()
     ifil.SetInput(v.renWin)
     ifil.ReadFrontBufferOff()
@@ -137,20 +137,23 @@ def _export_png(v, file_name="scene.png"):
     png.Write()
 
 
-def _color_recursive(lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase) -> None:
-    if hasattr(lv, "pygeom_color_rgba"):
+def _color_recursive(
+    lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase, overrides: dict
+) -> None:
+    if hasattr(lv, "pygeom_color_rgba") or lv.name in overrides:
+        color_rgba = overrides.get(lv.name, lv.pygeom_color_rgba)
         for vis in viewer.instanceVisOptions[lv.name]:
-            if lv.pygeom_color_rgba is False:
+            if color_rgba is False:
                 vis.alpha = 0
                 vis.visible = False
             else:
-                vis.colour = lv.pygeom_color_rgba[0:3]
-                vis.alpha = lv.pygeom_color_rgba[3]
+                vis.colour = color_rgba[0:3]
+                vis.alpha = color_rgba[3]
                 vis.visible = vis.alpha > 0
 
     for pv in lv.daughterVolumes:
         if pv.type == "placement":
-            _color_recursive(pv.logicalVolume, viewer)
+            _color_recursive(pv.logicalVolume, viewer, overrides)
 
 
 def vis_gdml_cli() -> None:
