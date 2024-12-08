@@ -55,4 +55,8 @@ scenes:
   - origin: [0, 0, 0]
     up: [0.55, 0, 0.82]
     pos: [-14000, 0, 8000]
+
+# override colors of specified logical volumes
+color_overrides:
+  lar: False
 ```
