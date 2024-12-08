@@ -18,7 +18,7 @@ from .visualization import load_color_auxvals_recursive
 log = logging.getLogger(__name__)
 
 
-def visualize(registry: g4.Registry, scenes: dict | None = None) -> None:
+def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) -> None:
     if scenes is None:
         scenes = {}
 
@@ -35,6 +35,9 @@ def visualize(registry: g4.Registry, scenes: dict | None = None) -> None:
     v.buildPipelinesAppend()
     v.addAxes(length=5000)
     v.axes[0].SetVisibility(False)  # hide axes by default.
+
+    if points is not None:
+        _add_points(v, points)
 
     # override the interactor style.
     v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
@@ -61,19 +64,23 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
         self.scenes = scenes
 
     def keypress(self, _obj, _event):
-        # predefined: "e"xit
+        # predefined: _e_xit
 
         key = self.iren.GetKeySym()
-        if key == "a":  # toggle "a"xes
+        if key == "a":  # toggle _a_xes
             ax = self.vtkviewer.axes[0]
             ax.SetVisibility(not ax.GetVisibility())
-
             self.ren.GetRenderWindow().Render()
 
-        if key == "u":  # "u"p
+        if key == "p" and self.vtkviewer.points is not None:  # toggle _p_oints
+            pn = self.vtkviewer.points
+            pn.SetVisibility(not ax.GetVisibility())
+            self.ren.GetRenderWindow().Render()
+
+        if key == "u":  # _u_p
             _set_camera(self, up=(0, 0, 1), pos=(-20000, 0, 0))
 
-        if key == "t":  # "t"op
+        if key == "t":  # _t_op
             _set_camera(self, up=(1, 0, 0), pos=(0, 0, +20000))
 
         sc_index = 1
@@ -84,10 +91,10 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
                 )
                 sc_index += 1
 
-        if key == "s":  # "s"ave
+        if key == "s":  # _s_ave
             _export_png(self.vtkviewer)
 
-        if key == "i":
+        if key == "i":  # dump camera _i_nfo
             cam = self.ren.GetActiveCamera()
             print(f"- focus: {list(cam.GetFocalPoint())}")  # noqa: T201
             print(f"  up: {list(cam.GetViewUp())}")  # noqa: T201
@@ -137,6 +144,36 @@ def _export_png(v, file_name="scene.png") -> None:
     png.Write()
 
 
+def _add_points(v, points) -> None:
+    # create vtkPolyData from points.
+    vp = vtk.vtkPoints()
+    ca = vtk.vtkCellArray()
+    pd = vtk.vtkPolyData()
+
+    for t in points:
+        p = vp.InsertNextPoint(*t)
+        ca.InsertNextCell(1)
+        ca.InsertCellPoint(p)
+
+    pd.SetPoints(vp)
+    pd.SetVerts(ca)
+
+    # add points to renderer.
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(pd)
+    mapper.ScalarVisibilityOff()
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetColor(1, 1, 0)
+    actor.GetProperty().SetPointSize(5)
+    actor.GetProperty().SetOpacity(1)
+    actor.GetProperty().SetRenderPointsAsSpheres(True)
+
+    v.ren.AddActor(actor)
+    v.points = actor
+
+
 def _color_recursive(
     lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase, overrides: dict
 ) -> None:
@@ -184,6 +221,15 @@ def vis_gdml_cli() -> None:
         "-s",
         help="""scene definition file.""",
     )
+    parser.add_argument(
+        "--add-points",
+        help="""load points from LH5 file""",
+    )
+    parser.add_argument(
+        "--add-points-columns",
+        default="stp/vertices:xloc,yloc,zloc",
+        help="""columns in the point file %(default)s""",
+    )
 
     parser.add_argument(
         "filename",
@@ -204,8 +250,35 @@ def vis_gdml_cli() -> None:
     if scene.get("fine_mesh", args.fine):
         meshconfig.setGlobalMeshSliceAndStack(100)
 
+    points = None
+    if args.add_points:
+        import pint
+        from lgdo import lh5
+
+        table_parts = [c.strip() for c in args.add_points_columns.split(":")]
+        point_table = table_parts[0]
+        point_columns = [c.strip() for c in table_parts[1].split(",")]
+        if len(table_parts) != 2 or len(point_columns) != 3:
+            msg = "invalid parameter for points"
+            raise ValueError(msg)
+
+        log.info(
+            "loading table %s (with columns %s) from file %s",
+            point_table,
+            str(point_columns),
+            args.add_points,
+        )
+        point_table = lh5.read(point_table, args.add_points)
+
+        # the points need to be in mm.
+        u = pint.get_application_registry()
+        units = [u(point_table[c].getattrs().get("units", "")) for c in point_columns]
+        units = [(un / u.mm).to("dimensionless").m for un in units]
+
+        points = point_table.view_as("pd")[point_columns].to_numpy() * units
+
     log.info("loading GDML geometry from %s", args.filename)
     registry = gdml.Reader(args.filename).getRegistry()
 
     log.info("visualizing...")
-    visualize(registry, scene)
+    visualize(registry, scene, points)
