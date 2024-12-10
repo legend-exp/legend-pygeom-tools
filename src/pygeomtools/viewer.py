@@ -47,7 +47,13 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     # set some defaults
     if "default" in scenes:
         sc = scenes["default"]
-        _set_camera(v, up=sc.get("up"), pos=sc.get("camera"), focus=sc.get("focus"))
+        _set_camera(
+            v,
+            up=sc.get("up"),
+            pos=sc.get("camera"),
+            focus=sc.get("focus"),
+            parallel=sc.get("parallel", False),
+        )
     else:
         _set_camera(v, up=(1, 0, 0), pos=(0, 0, +20000))
 
@@ -72,22 +78,30 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
             ax.SetVisibility(not ax.GetVisibility())
             self.ren.GetRenderWindow().Render()
 
-        if key == "p" and self.vtkviewer.points is not None:  # toggle _p_oints
+        if key == "v" and self.vtkviewer.points is not None:  # toggle _v_ertices
             pn = self.vtkviewer.points
             pn.SetVisibility(not ax.GetVisibility())
             self.ren.GetRenderWindow().Render()
 
         if key == "u":  # _u_p
-            _set_camera(self, up=(0, 0, 1), pos=(-20000, 0, 0))
+            _set_camera(self.vtkviewer, up=(0, 0, 1), pos=(-20000, 0, 0))
 
         if key == "t":  # _t_op
-            _set_camera(self, up=(1, 0, 0), pos=(0, 0, +20000))
+            _set_camera(self.vtkviewer, up=(1, 0, 0), pos=+20000)
+
+        if key == "p":  # _p_arralel projection
+            cam = self.ren.GetActiveCamera()
+            _set_camera(self.vtkviewer, parallel=not cam.GetParallelProjection())
 
         sc_index = 1
         for sc in self.scenes.get("scenes", []):
             if key == f"F{sc_index}":
                 _set_camera(
-                    self, up=sc.get("up"), pos=sc.get("camera"), focus=sc.get("focus")
+                    self.vtkviewer,
+                    up=sc.get("up"),
+                    pos=sc.get("camera"),
+                    focus=sc.get("focus"),
+                    parallel=sc.get("parallel", False),
                 )
                 sc_index += 1
 
@@ -99,14 +113,23 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
             print(f"- focus: {list(cam.GetFocalPoint())}")  # noqa: T201
             print(f"  up: {list(cam.GetViewUp())}")  # noqa: T201
             print(f"  camera: {list(cam.GetPosition())}")  # noqa: T201
+            if cam.GetParallelProjection():
+                print(f"  parallel: {cam.GetParallelScale()}")  # noqa: T201
 
         if key == "plus":
-            _set_camera(self, dolly=1.1)
+            _set_camera(self.vtkviewer, dolly=1.1)
         if key == "minus":
-            _set_camera(self, dolly=0.9)
+            _set_camera(self.vtkviewer, dolly=0.9)
 
 
-def _set_camera(v, focus=None, up=None, pos=None, dolly=None) -> None:
+def _set_camera(
+    v: pyg4vis.VtkViewerColouredNew,
+    focus: tuple[float, float, float] | None = None,
+    up: tuple[float, float, float] | None = None,
+    pos: tuple[float, float, float] | None = None,
+    dolly: float | None = None,
+    parallel: bool | int | None = None,
+) -> None:
     cam = v.ren.GetActiveCamera()
     if focus is not None:
         cam.SetFocalPoint(*focus)
@@ -115,13 +138,23 @@ def _set_camera(v, focus=None, up=None, pos=None, dolly=None) -> None:
     if pos is not None:
         cam.SetPosition(*pos)
     if dolly is not None:
-        cam.Dolly(dolly)
+        if cam.GetParallelProjection():
+            cam.SetParallelScale(1 / dolly * cam.GetParallelScale())
+        else:
+            cam.Dolly(dolly)
+    if parallel is not None:
+        cam.SetParallelProjection(int(parallel) > 0)
+        if cam.GetParallelScale() == 1.0:
+            # still at initial value, set to something more useful.
+            cam.SetParallelScale(2000)
+        if not isinstance(parallel, bool):
+            cam.SetParallelScale(int(parallel))
 
     v.ren.ResetCameraClippingRange()
     v.ren.GetRenderWindow().Render()
 
 
-def _export_png(v, file_name="scene.png") -> None:
+def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name="scene.png") -> None:
     ifil = vtk.vtkWindowToImageFilter()
     ifil.SetInput(v.renWin)
     ifil.ReadFrontBufferOff()
