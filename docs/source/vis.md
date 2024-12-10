@@ -30,9 +30,10 @@ options:
 - `a` show/hide axes
 - `u` side view
 - `t` view from top
+- `p` toggle parallel projection
 - `s` save screenshot
 - `i` dump current camera info (focal point, up vector, position)
-- `p` toggle display of loaded points (see `--add-points`)
+- `v` toggle display of loaded points (see `--add-points`)
 - `F<n>` switch to scene n
 - `+` zoom in
 - `-` zoom out
@@ -63,6 +64,13 @@ scenes:
   - origin: [0, 0, 0]
     up: [0.55, 0, 0.82]
     pos: [-14000, 0, 8000]
+  # a scene with parallel projection
+  - origin: [0, 0, 0]
+    up: [0.55, 0, 0.82]
+    pos: [-14000, 0, 8000]
+    # in parallel mode, the number here controls the zoom level.
+    # the number is half the screen height in mm
+    parallel: 2000
 
 # override colors of specified logical volumes
 color_overrides:
