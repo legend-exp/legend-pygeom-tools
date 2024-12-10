@@ -30,7 +30,7 @@ def generate_color_macro(registry: g4.Registry, filename: str) -> None:
     _color_macro_recursive(registry.worldVolume, macro_lines)
     macro_contents = "".join([m for m in macro_lines.values() if m is not None])
 
-    with Path.open(filename, "w", encoding="utf-8") as f:
+    with Path(filename).open("w", encoding="utf-8") as f:
         f.write(macro_contents)
 
 
