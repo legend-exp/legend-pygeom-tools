@@ -72,7 +72,7 @@ def generate_detector_macro(registry: g4.Registry, filename: str) -> None:
 
     macro_contents = "".join(macro_lines.values())
 
-    with Path.open(filename, "w", encoding="utf-8") as f:
+    with Path(filename).open("w", encoding="utf-8") as f:
         f.write(macro_contents)
 
 
