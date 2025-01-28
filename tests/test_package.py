@@ -33,18 +33,18 @@ def test_detector_info(tmp_path):
     scint1pv = g4.PhysicalVolume(
         [0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry
     )
-    scint1pv.pygeom_active_dector = RemageDetectorInfo("scintillator", 3)
+    scint1pv.pygeom_active_detector = RemageDetectorInfo("scintillator", 3)
     scint2pv = g4.PhysicalVolume(
         [0, 0, 0], [+255, 0, 0], scint2, "scint2", world_lv, registry
     )
-    scint2pv.pygeom_active_dector = RemageDetectorInfo("scintillator", 3)
+    scint2pv.pygeom_active_detector = RemageDetectorInfo("scintillator", 3)
 
     det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
     det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
     det1 = g4.PhysicalVolume([0, 0, 0], [0, 0, 0], det, "det1", scint1, registry)
-    det1.pygeom_active_dector = RemageDetectorInfo("optical", 1, {"some": "metadata"})
+    det1.pygeom_active_detector = RemageDetectorInfo("optical", 1, {"some": "metadata"})
     det2 = g4.PhysicalVolume([0, 0, 0], [0, 0, 0], det, "det2", scint2, registry)
-    det2.pygeom_active_dector = RemageDetectorInfo(
+    det2.pygeom_active_detector = RemageDetectorInfo(
         "germanium", 2, {"other": "other metadata"}
     )
 
