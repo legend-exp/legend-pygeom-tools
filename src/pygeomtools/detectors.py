@@ -39,10 +39,22 @@ def walk_detectors(
 ) -> Generator[tuple[g4.PhysicalVolume, RemageDetectorInfo], None, None]:
     """Iterate over all physical volumes that have a :class:`RemageDetectorInfo` attached."""
 
-    if isinstance(pv, g4.PhysicalVolume) and hasattr(pv, "pygeom_active_dector"):
-        det = pv.pygeom_active_dector
-        assert isinstance(det, RemageDetectorInfo)
-        yield pv, det
+    if isinstance(pv, g4.PhysicalVolume):
+        det = None
+        if hasattr(pv, "pygeom_active_detector"):
+            det = pv.pygeom_active_detector
+        elif hasattr(pv, "pygeom_active_dector"):
+            import warnings
+
+            warnings.warn(
+                "pygeom_active_dector (typo!) is deprecated, use pygeom_active_detector instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            det = pv.pygeom_active_dector
+        if det is not None:
+            assert isinstance(det, RemageDetectorInfo)
+            yield pv, det
 
     if isinstance(pv, g4.LogicalVolume):
         next_v = pv

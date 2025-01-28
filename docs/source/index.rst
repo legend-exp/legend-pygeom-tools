@@ -10,7 +10,7 @@ can use the following set of attributes to control the package's output.
 Registering detectors for use with `remage`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-On a physical volume instance, you can attach a ``pygeom_active_dector``, e.g.
+On a physical volume instance, you can attach a ``pygeom_active_detector``, e.g.
 
 .. code:: python
 
@@ -19,7 +19,7 @@ On a physical volume instance, you can attach a ``pygeom_active_dector``, e.g.
    pv = g4.PhysicalVolume(...)
 
    # attach an active detector to this physical volume.
-   pv.pygeom_active_dector = RemageDetectorInfo(
+   pv.pygeom_active_detector = RemageDetectorInfo(
        "optical",  # detector type. The available options are defined by remage.
        1,  # detector id in remage.
        {"some": "metadata"},  # user-defined data (optional) that is stored into GDML.
