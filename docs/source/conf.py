@@ -38,7 +38,15 @@ html_theme_options = {
 }
 html_title = f"{project} {version}"
 
-autodoc_default_options = {"ignore-module-all": True}
+exclude_members = (
+    "_asdict, _fields, _field_defaults, _make, _replace, "  # ignore some common members from NamedTuples.
+    + "__get_pygeom_active_detector, __set_pygeom_active_detector, _KeyboardInteractor"  # ...and some internal of ours.
+)
+
+autodoc_default_options = {
+    "ignore-module-all": True,
+    "exclude-members": exclude_members,
+}
 
 # sphinx-napoleon
 # enforce consistent usage of NumPy-style docstrings
