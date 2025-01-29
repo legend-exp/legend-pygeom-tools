@@ -239,7 +239,10 @@ def _color_recursive(
     lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase, overrides: dict
 ) -> None:
     if hasattr(lv, "pygeom_color_rgba") or lv.name in overrides:
-        color_rgba = overrides.get(lv.name, lv.pygeom_color_rgba)
+        color_rgba = lv.pygeom_color_rgba if hasattr(lv, "pygeom_color_rgba") else None
+        color_rgba = overrides.get(lv.name, color_rgba)
+        assert color_rgba is not None
+
         for vis in viewer.instanceVisOptions[lv.name]:
             if color_rgba is False:
                 vis.alpha = 0
