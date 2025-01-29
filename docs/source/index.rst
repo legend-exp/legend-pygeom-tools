@@ -5,7 +5,9 @@ For geometry writers
 --------------------
 
 If your geometry creation script/notebook/application is already set up correctly, you
-can use the following set of attributes to control the package's output.
+can use our :doc:`extensions to the pyg4ometry API <pyg4-api>` to control the package's output.
+
+Detector registration and visualization attributes will be stored into the output GDML file.
 
 Registering detectors for use with `remage`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -19,10 +21,12 @@ On a physical volume instance, you can attach a ``pygeom_active_detector``, e.g.
    pv = g4.PhysicalVolume(...)
 
    # attach an active detector to this physical volume.
-   pv.pygeom_active_detector = RemageDetectorInfo(
-       "optical",  # detector type. The available options are defined by remage.
-       1,  # detector id in remage.
-       {"some": "metadata"},  # user-defined data (optional) that is stored into GDML.
+   pv.set_pygeom_active_detector(
+       RemageDetectorInfo(
+           "optical",  # detector type. The available options are defined by remage.
+           1,  # detector id in remage.
+           {"some": "metadata"},  # user-defined data (optional) that is stored into GDML.
+       )
    )
 
 
@@ -68,5 +72,6 @@ Table of Contents
    Metadata in GDML <metadata>
    GDML viewer <vis>
    Package API reference <api/modules>
+   pyg4ometry API extensions <pyg4-api>
 
 .. _remage: https://github.com/legend-exp/remage
