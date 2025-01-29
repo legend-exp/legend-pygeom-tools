@@ -240,7 +240,6 @@ def _color_recursive(
 ) -> None:
     if hasattr(lv, "pygeom_color_rgba") or lv.name in overrides:
         color_rgba = overrides.get(lv.name, lv.pygeom_color_rgba)
-
         for vis in viewer.instanceVisOptions[lv.name]:
             if color_rgba is False:
                 vis.alpha = 0
