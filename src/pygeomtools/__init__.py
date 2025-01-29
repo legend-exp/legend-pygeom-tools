@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+# note: do not load viewer module here, as it has quite large nested imports.
 from . import detectors, geometry, utils
 from ._version import version as __version__
 from .detectors import RemageDetectorInfo, get_all_sensvols, get_sensvol_metadata
-
-# note: do not load viewer module here, as it has quite large nested imports.
+from .write import write_pygeom
 
 __all__ = [
     "RemageDetectorInfo",
@@ -14,4 +14,5 @@ __all__ = [
     "get_all_sensvols",
     "get_sensvol_metadata",
     "utils",
+    "write_pygeom",
 ]

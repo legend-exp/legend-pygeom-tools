@@ -14,7 +14,7 @@ def test_package():
 
 
 def test_detector_info(tmp_path):
-    from pygeomtools import RemageDetectorInfo, detectors, geometry, visualization
+    from pygeomtools import RemageDetectorInfo, detectors, write_pygeom
 
     registry = g4.Registry()
     world = g4.solid.Box("world", 2, 2, 2, registry, "m")
@@ -48,14 +48,7 @@ def test_detector_info(tmp_path):
         "germanium", 2, {"other": "other metadata"}
     )
 
-    detectors.write_detector_auxvals(registry)
-    visualization.write_color_auxvals(registry)
-    geometry.check_registry_sanity(registry, registry)
-
-    w = pyg4ometry.gdml.Writer()
-    w.addDetector(registry)
-
-    w.write(tmp_path / "geometry.gdml")
+    write_pygeom(registry, tmp_path / "geometry.gdml")
 
     # test read again
     registry = pyg4ometry.gdml.Reader(tmp_path / "geometry.gdml").getRegistry()

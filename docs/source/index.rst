@@ -46,7 +46,7 @@ For application developers (general setup)
 
 .. code:: python
 
-    from pygeomtools import detectors, geometry, visualization
+    from pygeomtools import detectors, geometry, visualization, write_pygeom
 
     reg = geant4.Registry()
 
@@ -54,11 +54,9 @@ For application developers (general setup)
     # include some of the things described above (detectors, coloring)
     # ...
 
-    detectors.write_detector_auxvals(reg)
-    visualization.write_color_auxvals(reg)
-    geometry.check_registry_sanity(reg, reg)
-
-    # now write out the GDML or visualize it.
+    # commit all auxiliary data to the registry and write out the GDML file. Use None as
+    # file name to suppress writing a file (e.g. when you only want to visualize)
+    write_pygeom(reg, "test.gdml")
 
 
 Table of Contents
