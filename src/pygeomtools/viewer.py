@@ -39,6 +39,14 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     if points is not None:
         _add_points(v, points)
 
+    for scene_points in scenes.get("points", []):
+        points_array = _load_points(
+            scene_points["file"],
+            scene_points["table"],
+            scene_points.get("columns", ["xloc", "yloc", "zloc"]),
+        )
+        _add_points(v, points_array)
+
     # override the interactor style.
     v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
     v.interactorStyle.SetDefaultRenderer(v.ren)
@@ -177,7 +185,7 @@ def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name="scene.png") -> None:
     png.Write()
 
 
-def _add_points(v, points) -> None:
+def _add_points(v, points, color=(1, 1, 0)) -> None:
     # create vtkPolyData from points.
     vp = vtk.vtkPoints()
     ca = vtk.vtkCellArray()
@@ -198,7 +206,7 @@ def _add_points(v, points) -> None:
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
-    actor.GetProperty().SetColor(1, 1, 0)
+    actor.GetProperty().SetColor(*color)
     actor.GetProperty().SetPointSize(5)
     actor.GetProperty().SetOpacity(1)
     actor.GetProperty().SetRenderPointsAsSpheres(True)
@@ -207,11 +215,34 @@ def _add_points(v, points) -> None:
     v.points = actor
 
 
+def _load_points(lh5_file: str, point_table: str, columns: list[str]):
+    import pint
+    from lgdo import lh5
+
+    log.info(
+        "loading table %s (with columns %s) from file %s",
+        point_table,
+        str(columns),
+        lh5_file,
+    )
+    point_table = lh5.read(point_table, lh5_file)
+
+    # the points need to be in mm.
+    u = pint.get_application_registry()
+    units = [u(point_table[c].getattrs().get("units", "")) for c in columns]
+    units = [(un / u.mm).to("dimensionless").m for un in units]
+
+    return point_table.view_as("pd")[columns].to_numpy() * units
+
+
 def _color_recursive(
     lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase, overrides: dict
 ) -> None:
     if hasattr(lv, "pygeom_color_rgba") or lv.name in overrides:
-        color_rgba = overrides.get(lv.name, lv.pygeom_color_rgba)
+        color_rgba = lv.pygeom_color_rgba if hasattr(lv, "pygeom_color_rgba") else None
+        color_rgba = overrides.get(lv.name, color_rgba)
+        assert color_rgba is not None
+
         for vis in viewer.instanceVisOptions[lv.name]:
             if color_rgba is False:
                 vis.alpha = 0
@@ -285,9 +316,6 @@ def vis_gdml_cli() -> None:
 
     points = None
     if args.add_points:
-        import pint
-        from lgdo import lh5
-
         table_parts = [c.strip() for c in args.add_points_columns.split(":")]
         point_table = table_parts[0]
         point_columns = [c.strip() for c in table_parts[1].split(",")]
@@ -295,20 +323,7 @@ def vis_gdml_cli() -> None:
             msg = "invalid parameter for points"
             raise ValueError(msg)
 
-        log.info(
-            "loading table %s (with columns %s) from file %s",
-            point_table,
-            str(point_columns),
-            args.add_points,
-        )
-        point_table = lh5.read(point_table, args.add_points)
-
-        # the points need to be in mm.
-        u = pint.get_application_registry()
-        units = [u(point_table[c].getattrs().get("units", "")) for c in point_columns]
-        units = [(un / u.mm).to("dimensionless").m for un in units]
-
-        points = point_table.view_as("pd")[point_columns].to_numpy() * units
+        points = _load_points(args.add_points, point_table, point_columns)
 
     log.info("loading GDML geometry from %s", args.filename)
     registry = gdml.Reader(args.filename).getRegistry()
