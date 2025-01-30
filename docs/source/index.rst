@@ -5,7 +5,9 @@ For geometry writers
 --------------------
 
 If your geometry creation script/notebook/application is already set up correctly, you
-can use the following set of attributes to control the package's output.
+can use our :doc:`extensions to the pyg4ometry API <pyg4-api>` to control the package's output.
+
+Detector registration and visualization attributes will be stored into the output GDML file.
 
 Registering detectors for use with `remage`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -19,10 +21,12 @@ On a physical volume instance, you can attach a ``pygeom_active_detector``, e.g.
    pv = g4.PhysicalVolume(...)
 
    # attach an active detector to this physical volume.
-   pv.pygeom_active_detector = RemageDetectorInfo(
-       "optical",  # detector type. The available options are defined by remage.
-       1,  # detector id in remage.
-       {"some": "metadata"},  # user-defined data (optional) that is stored into GDML.
+   pv.set_pygeom_active_detector(
+       RemageDetectorInfo(
+           "optical",  # detector type. The available options are defined by remage.
+           1,  # detector id in remage.
+           {"some": "metadata"},  # user-defined data (optional) that is stored into GDML.
+       )
    )
 
 
@@ -46,7 +50,7 @@ For application developers (general setup)
 
 .. code:: python
 
-    from pygeomtools import detectors, geometry, visualization
+    from pygeomtools import detectors, geometry, visualization, write_pygeom
 
     reg = geant4.Registry()
 
@@ -54,11 +58,9 @@ For application developers (general setup)
     # include some of the things described above (detectors, coloring)
     # ...
 
-    detectors.write_detector_auxvals(reg)
-    visualization.write_color_auxvals(reg)
-    geometry.check_registry_sanity(reg, reg)
-
-    # now write out the GDML or visualize it.
+    # commit all auxiliary data to the registry and write out the GDML file. Use None as
+    # file name to suppress writing a file (e.g. when you only want to visualize)
+    write_pygeom(reg, "test.gdml")
 
 
 Table of Contents
@@ -70,5 +72,6 @@ Table of Contents
    Metadata in GDML <metadata>
    GDML viewer <vis>
    Package API reference <api/modules>
+   pyg4ometry API extensions <pyg4-api>
 
 .. _remage: https://github.com/legend-exp/remage

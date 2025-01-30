@@ -14,7 +14,7 @@ def test_package():
 
 
 def test_detector_info(tmp_path):
-    from pygeomtools import RemageDetectorInfo, detectors, geometry, visualization
+    from pygeomtools import RemageDetectorInfo, detectors, write_pygeom
 
     registry = g4.Registry()
     world = g4.solid.Box("world", 2, 2, 2, registry, "m")
@@ -33,11 +33,14 @@ def test_detector_info(tmp_path):
     scint1pv = g4.PhysicalVolume(
         [0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry
     )
-    scint1pv.pygeom_active_detector = RemageDetectorInfo("scintillator", 3)
+    scint1pv.set_pygeom_active_detector(RemageDetectorInfo("scintillator", 3))
     scint2pv = g4.PhysicalVolume(
         [0, 0, 0], [+255, 0, 0], scint2, "scint2", world_lv, registry
     )
-    scint2pv.pygeom_active_detector = RemageDetectorInfo("scintillator", 3)
+    assert scint2pv.get_pygeom_active_detector() is None
+    scint2pv.set_pygeom_active_detector(RemageDetectorInfo("scintillator", 3))
+    assert scint2pv.pygeom_active_detector is not None
+    assert scint2pv.get_pygeom_active_detector() == scint2pv.pygeom_active_detector
 
     det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
     det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
@@ -48,14 +51,7 @@ def test_detector_info(tmp_path):
         "germanium", 2, {"other": "other metadata"}
     )
 
-    detectors.write_detector_auxvals(registry)
-    visualization.write_color_auxvals(registry)
-    geometry.check_registry_sanity(registry, registry)
-
-    w = pyg4ometry.gdml.Writer()
-    w.addDetector(registry)
-
-    w.write(tmp_path / "geometry.gdml")
+    write_pygeom(registry, tmp_path / "geometry.gdml")
 
     # test read again
     registry = pyg4ometry.gdml.Reader(tmp_path / "geometry.gdml").getRegistry()

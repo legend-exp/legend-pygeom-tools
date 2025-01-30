@@ -156,3 +156,26 @@ def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
         raise RuntimeError(msg)
 
     return detmapping
+
+
+def __set_pygeom_active_detector(self, det_info: RemageDetectorInfo | None) -> None:
+    """Set the remage detector info on this physical volume instance."""
+    if not isinstance(self, g4.PhysicalVolume):
+        msg = "patched-in function called on wrong type"
+        raise TypeError(msg)
+    self.pygeom_active_detector = det_info
+
+
+def __get_pygeom_active_detector(self) -> RemageDetectorInfo | None:
+    """Get the remage detector info on this physical volume instance."""
+    if not isinstance(self, g4.PhysicalVolume):
+        msg = "patched-in function called on wrong type"
+        raise TypeError(msg)
+    if hasattr(self, "pygeom_active_detector"):
+        return self.pygeom_active_detector
+    return None
+
+
+# monkey-patch a new function onto every PhysicalVolume instance:
+g4.PhysicalVolume.set_pygeom_active_detector = __set_pygeom_active_detector
+g4.PhysicalVolume.get_pygeom_active_detector = __get_pygeom_active_detector
