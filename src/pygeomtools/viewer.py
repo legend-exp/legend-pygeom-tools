@@ -19,6 +19,18 @@ log = logging.getLogger(__name__)
 
 
 def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) -> None:
+    """Open a VTK-based viewer for the geometry and scene definition.
+
+    Parameters
+    ----------
+    registry
+        registry instance containing the geometry to view.
+    scenes
+        loaded :ref:`scene definition file <scene-file-format>`. note that the `fine_mesh`
+        key is ignored and has to be set before loading/constructing the geometry.
+    points
+        show points, additionally to the points defined in the scene config.
+    """
     if scenes is None:
         scenes = {}
 
@@ -45,7 +57,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
             scene_points["table"],
             scene_points.get("columns", ["xloc", "yloc", "zloc"]),
         )
-        _add_points(v, points_array)
+        _add_points(v, points_array, scene_points.get("color", (1, 1, 0, 1)))
 
     # override the interactor style.
     v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
@@ -185,7 +197,7 @@ def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name="scene.png") -> None:
     png.Write()
 
 
-def _add_points(v, points, color=(1, 1, 0)) -> None:
+def _add_points(v, points, color=(1, 1, 0, 1)) -> None:
     # create vtkPolyData from points.
     vp = vtk.vtkPoints()
     ca = vtk.vtkCellArray()
@@ -206,9 +218,9 @@ def _add_points(v, points, color=(1, 1, 0)) -> None:
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
-    actor.GetProperty().SetColor(*color)
+    actor.GetProperty().SetColor(*color[0:3])
     actor.GetProperty().SetPointSize(5)
-    actor.GetProperty().SetOpacity(1)
+    actor.GetProperty().SetOpacity(color[3])
     actor.GetProperty().SetRenderPointsAsSpheres(True)
 
     v.ren.AddActor(actor)
