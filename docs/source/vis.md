@@ -38,6 +38,10 @@ options:
 - `+` zoom in
 - `-` zoom out
 
+```{eval-rst}
+.. _scene-file-format:
+```
+
 ## scene file format
 
 ```yaml
@@ -46,33 +50,46 @@ fine_mesh: true
 
 # default position at startup of viewer
 default:
-  # focal point
+  # focus point (units: mm)
   focus: [0, 0, 0]
-  # up-vector
+  # up vector (dimensionless)
   up: [1, 0, 0]
-  # camera position
+  # camera position (units: mm)
   camera: [0, 0, 20000]
+  # enable/disable parallel projection (optional, false or number)
+  parallel: false
 
 # clip through the geometry
 clipper:
   - origin: [0, 0, 0]
     normal: [1, 0, 0]
 
-# other pre-defined scenes
+# other pre-defined scenes/camera positions
 # can be opened by pressing F<n> (n is the 1-based index in this list)
+# for details see the `default` config above.
 scenes:
   - origin: [0, 0, 0]
     up: [0.55, 0, 0.82]
     pos: [-14000, 0, 8000]
-  # a scene with parallel projection
-  - origin: [0, 0, 0]
+
+  - # a scene with parallel projection
+    origin: [0, 0, 0]
     up: [0.55, 0, 0.82]
     pos: [-14000, 0, 8000]
     # in parallel mode, the number here controls the zoom level.
     # the number is half the screen height in mm
     parallel: 2000
 
-# override colors of specified logical volumes
+# override colors for logical volumes. Either a 4-tuple (RGBA, range 0-1) or false.
 color_overrides:
-  lar: False
+  lar: false
+  V02160A: [0, 1, 0, 1]
+
+# show points (e.g. vertices, hits) as overlay over the geometry from LH5 files.
+# the units in the LH5 file will be respected.
+points:
+  - file: test-points.lh5
+    table: stp/vertices
+    columns: ["xloc", "yloc", "zloc"]
+    color: [0, 1, 0, 1] # rgba tuple.
 ```
