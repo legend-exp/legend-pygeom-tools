@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 
 import pyg4ometry
-from legendmeta import AttrsDict
+from dbetto import AttrsDict
 from pyg4ometry import geant4 as g4
 
 import pygeomtools
