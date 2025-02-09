@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Literal
 
 import pyg4ometry.geant4 as g4
-from legendmeta import AttrsDict
+from dbetto import AttrsDict
 from pyg4ometry.gdml.Defines import Auxiliary
 
 log = logging.getLogger(__name__)

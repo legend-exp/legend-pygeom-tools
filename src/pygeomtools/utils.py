@@ -1,39 +1,29 @@
 from __future__ import annotations
 
-import json
 import logging
-from pathlib import Path
 from typing import Callable
 
-import yaml
-from legendmeta import AttrsDict
+from dbetto import AttrsDict, utils
 
 log = logging.getLogger(__name__)
 
-__file_extensions__ = {"json": [".json"], "yaml": [".yaml", ".yml"]}
-
 
 def load_dict(fname: str, ftype: str | None = None) -> dict:
-    """Load a text file as a Python dict."""
-    fname = Path(fname)
+    """Load a text file as a Python dict.
 
-    # determine file type from extension
-    if ftype is None:
-        for _ftype, exts in __file_extensions__.items():
-            if fname.suffix in exts:
-                ftype = _ftype
+    .. deprecated :: 0.0.8
+        Use :func:`dbetto.utils.load_dict` instead.
+    """
+    import warnings
 
-    msg = f"loading {ftype} dict from: {fname}"
-    log.debug(msg)
+    warnings.warn(
+        "The load_dict function has moved to the dbetto package (https://github.com/gipert/dbetto). "
+        "Please update your code, as load_dict will be removed from this package in the future.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-    with fname.open() as f:
-        if ftype == "json":
-            return json.load(f)
-        if ftype == "yaml":
-            return yaml.safe_load(f)
-
-        msg = f"unsupported file format {ftype}"
-        raise NotImplementedError(msg)
+    return utils.load_dict(fname, ftype)
 
 
 def load_dict_from_config(
@@ -48,7 +38,7 @@ def load_dict_from_config(
     """
     m = config.get(key)
     if isinstance(m, str):
-        return AttrsDict(load_dict(m))
+        return AttrsDict(utils.load_dict(m))
     if isinstance(m, dict):
         return AttrsDict(m)
     return default()
