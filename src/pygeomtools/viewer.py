@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import logging
 from pathlib import Path
 
@@ -248,8 +249,23 @@ def _load_points(lh5_file: str, point_table: str, columns: list[str]):
 
 
 def _color_recursive(
-    lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase, overrides: dict
+    lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase, overrides: dict, level: int = 0
 ) -> None:
+    if level == 0:
+        # first, make sure that we have independent VisOption instances everywhere.
+        default_vo = viewer.getDefaultVisOptions()
+        for vol in viewer.instanceVisOptions:
+            viewer.instanceVisOptions[vol] = [
+                copy.copy(vo) if vo is default_vo else vo
+                for vo in viewer.instanceVisOptions[vol]
+            ]
+
+    if hasattr(lv, "pygeom_colour_rgba"):
+        log.warning(
+            "pygeom_colour_rgba on volume %s not supported, use use pygeom_color_rgba instead.",
+            lv.name,
+        )
+
     if hasattr(lv, "pygeom_color_rgba") or lv.name in overrides:
         color_rgba = lv.pygeom_color_rgba if hasattr(lv, "pygeom_color_rgba") else None
         color_rgba = overrides.get(lv.name, color_rgba)
@@ -266,7 +282,7 @@ def _color_recursive(
 
     for pv in lv.daughterVolumes:
         if pv.type == "placement":
-            _color_recursive(pv.logicalVolume, viewer, overrides)
+            _color_recursive(pv.logicalVolume, viewer, overrides, level + 1)
 
 
 def vis_gdml_cli() -> None:
