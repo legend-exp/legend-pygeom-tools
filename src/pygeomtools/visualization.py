@@ -49,6 +49,10 @@ def write_color_auxvals(registry: g4.Registry) -> None:
             )
             written_lvs.add(lv.name)
 
+        if hasattr(lv, "pygeom_colour_rgba"):
+            msg = f"pygeom_colour_rgba on volume {lv.name} not supported, use use pygeom_color_rgba instead."
+            raise RuntimeError(msg)
+
         for pv in lv.daughterVolumes:
             if pv.type == "placement":
                 _append_color_recursive(pv.logicalVolume)
