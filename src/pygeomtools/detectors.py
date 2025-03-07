@@ -78,7 +78,7 @@ def generate_detector_macro(registry: g4.Registry, filename: str) -> None:
 
     for pv, det in walk_detectors(registry):
         if pv.name in macro_lines:
-            return
+            continue
         mac = f"/RMG/Geometry/RegisterDetector {det.detector_type.title()} {pv.name} {det.uid}\n"
         macro_lines[pv.name] = mac
 
@@ -104,7 +104,7 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
 
         for pv, det in group:
             if pv.name in written_pvs:
-                return
+                continue
             written_pvs.add(pv.name)
 
             group_aux.addSubAuxiliary(
