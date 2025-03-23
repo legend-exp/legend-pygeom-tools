@@ -72,6 +72,13 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
         )
         _add_points(v, points_array, scene_points.get("color", (1, 1, 0, 1)))
 
+    # add light and shadow.
+    if "light" in scenes:
+        light = scenes["light"]
+        _add_light_and_shadow(
+            v, light_pos=light.get("pos"), shadow=light.get("shadow", True)
+        )
+
     # override the interactor style.
     v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
     v.interactorStyle.SetDefaultRenderer(v.ren)
@@ -303,6 +310,34 @@ def _color_recursive(
     for pv in lv.daughterVolumes:
         if pv.type == "placement":
             _color_recursive(pv.logicalVolume, viewer, overrides, level + 1)
+
+
+def _add_light_and_shadow(
+    v: pyg4vis.VtkViewerColouredNew,
+    light_pos: tuple[float, float, float],
+    shadow: bool,
+) -> None:
+    lc = vtk.vtkNamedColors()
+    lc.SetColor("LightColor", [255, 255, 251, 255])
+    light = vtk.vtkLight()
+    light.SetFocalPoint(0, 0, 0)
+    light.SetPosition(*light_pos)
+    light.SetIntensity(1)
+    light.SetColor(lc.GetColor3d("LightColor"))
+    v.ren.AddLight(light)
+
+    if shadow:
+        passes = vtk.vtkRenderPassCollection()
+        shadows = vtk.vtkShadowMapPass()
+        passes.AddItem(shadows.GetShadowMapBakerPass())
+        passes.AddItem(shadows)
+        passes.AddItem(vtk.vtkDefaultPass())
+        seq = vtk.vtkSequencePass()
+        seq.SetPasses(passes)
+
+        camera_pass = vtk.vtkCameraPass()
+        camera_pass.SetDelegatePass(seq)
+        v.ren.SetPass(camera_pass)
 
 
 def vis_gdml_cli() -> None:
