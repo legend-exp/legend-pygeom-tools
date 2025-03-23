@@ -96,4 +96,9 @@ points:
     table: stp/vertices
     columns: ["xloc", "yloc", "zloc"]
     color: [0, 1, 0, 1] # rgba tuple.
+
+# add light and shadows.
+light:
+  pos: [5000, 5000, 2000]
+  shadow: true
 ```
