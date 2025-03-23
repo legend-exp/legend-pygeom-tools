@@ -43,8 +43,16 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     registry.worldVolume.pygeom_color_rgba = False  # hide the wireframe of the world.
     _color_recursive(registry.worldVolume, v, scenes.get("color_overrides", {}))
 
-    for clip in scenes.get("clipper", []):
-        v.addClipper(clip["origin"], clip["normal"], bClipperCloseCuts=False)
+    clippers = scenes.get("clipper", [])
+    if len(clippers) != 1:
+        msg = "only one clipper can be set at the same time."
+        raise ValueError(msg)
+    for clip in clippers:
+        v.addClipper(
+            clip["origin"],
+            clip["normal"],
+            bClipperCloseCuts=clip.get("close_cuts", False),
+        )
 
     v.buildPipelinesAppend()
     v.addAxes(length=5000)

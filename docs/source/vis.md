@@ -63,6 +63,8 @@ default:
 clipper:
   - origin: [0, 0, 0]
     normal: [1, 0, 0]
+    # close all clipped volumes (might give bad results, default is false).
+    close_cuts: true
 
 # other pre-defined scenes/camera positions
 # can be opened by pressing F<n> (n is the 1-based index in this list)
