@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import copy
 import logging
+import re
 from pathlib import Path
 
 import pyg4ometry.geant4 as g4
@@ -248,6 +249,13 @@ def _load_points(lh5_file: str, point_table: str, columns: list[str]):
     return point_table.view_as("pd")[columns].to_numpy() * units
 
 
+def _color_override_matches(overrides: dict, name: str):
+    for pattern, color in overrides.items():
+        if re.match(f"{pattern}$", name):
+            return color
+    return None
+
+
 def _color_recursive(
     lv: g4.LogicalVolume, viewer: pyg4vis.ViewerBase, overrides: dict, level: int = 0
 ) -> None:
@@ -266,9 +274,10 @@ def _color_recursive(
             lv.name,
         )
 
-    if hasattr(lv, "pygeom_color_rgba") or lv.name in overrides:
+    color_override = _color_override_matches(overrides, lv.name)
+    if hasattr(lv, "pygeom_color_rgba") or color_override is not None:
         color_rgba = lv.pygeom_color_rgba if hasattr(lv, "pygeom_color_rgba") else None
-        color_rgba = overrides.get(lv.name, color_rgba)
+        color_rgba = color_override if color_override is not None else color_rgba
         assert color_rgba is not None
 
         for vis in viewer.instanceVisOptions[lv.name]:

@@ -84,6 +84,8 @@ scenes:
 color_overrides:
   lar: false
   V02160A: [0, 1, 0, 1]
+  # the keys are interpreted as regexes (they have to match the whole volume name).
+  "fibers_.*": [0, 0, 1, 1]
 
 # show points (e.g. vertices, hits) as overlay over the geometry from LH5 files.
 # the units in the LH5 file will be respected.
