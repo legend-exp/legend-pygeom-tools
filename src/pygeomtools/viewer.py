@@ -85,17 +85,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     v.iren.SetInteractorStyle(v.interactorStyle)
 
     # set some defaults
-    if "default" in scenes:
-        sc = scenes["default"]
-        _set_camera(
-            v,
-            up=sc.get("up"),
-            pos=sc.get("camera"),
-            focus=sc.get("focus"),
-            parallel=sc.get("parallel", False),
-        )
-    else:
-        _set_camera(v, up=(1, 0, 0), pos=(0, 0, +20000))
+    _set_camera_scene(v, scenes.get("default"))
 
     v.view()
 
@@ -133,17 +123,12 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
             cam = self.ren.GetActiveCamera()
             _set_camera(self.vtkviewer, parallel=not cam.GetParallelProjection())
 
-        sc_index = 1
-        for sc in self.scenes.get("scenes", []):
-            if key == f"F{sc_index}":
-                _set_camera(
-                    self.vtkviewer,
-                    up=sc.get("up"),
-                    pos=sc.get("camera"),
-                    focus=sc.get("focus"),
-                    parallel=sc.get("parallel", False),
-                )
-                sc_index += 1
+        for sc_index, sc in enumerate(self.scenes.get("scenes", [])):
+            if key == f"F{sc_index + 1}":
+                _set_camera_scene(self.vtkviewer, sc)
+
+        if key == "Home":
+            _set_camera_scene(self.vtkviewer, self.scenes.get("default"))
 
         if key == "s":  # _s_ave
             _export_png(self.vtkviewer)
@@ -192,6 +177,19 @@ def _set_camera(
 
     v.ren.ResetCameraClippingRange()
     v.ren.GetRenderWindow().Render()
+
+
+def _set_camera_scene(v: pyg4vis.VtkViewerColouredNew, sc: dict) -> None:
+    if sc is None:
+        _set_camera(v, up=(1, 0, 0), pos=(0, 0, +20000))
+    else:
+        _set_camera(
+            v,
+            up=sc.get("up"),
+            pos=sc.get("camera"),
+            focus=sc.get("focus"),
+            parallel=sc.get("parallel", False),
+        )
 
 
 def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name="scene.png") -> None:
