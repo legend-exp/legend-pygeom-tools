@@ -46,11 +46,14 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     registry.worldVolume.pygeom_color_rgba = False  # hide the wireframe of the world.
     _color_recursive(registry.worldVolume, v, scenes.get("color_overrides", {}))
 
+    # add clippers.
     clippers = scenes.get("clipper", [])
+    clippers_to_remove = []
     if len(clippers) != 1:
         msg = "only one clipper can be set at the same time."
         raise ValueError(msg)
     for clip in clippers:
+        clippers_to_remove = clip.get("close_cuts_remove", [])
         v.addClipper(
             clip["origin"],
             clip["normal"],
@@ -58,6 +61,22 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
         )
 
     v.buildPipelinesAppend()
+
+    # implement partial clipping. this can be quite confusing, as this can only remove
+    # based on shared VisOptions, and not by volume name. if a volume shares their
+    # VisOptions with a volume in clippers_to_remove, the closing planes of both will
+    # be removed.
+    if len(clippers_to_remove) > 0:
+        clip_remove_regex = f"({'|'.join(clippers_to_remove)})$"
+        vo_to_remove_clip = {
+            str(vo)
+            for k, vol in v.instanceVisOptions.items()
+            if re.match(clip_remove_regex, k)
+            for vo in vol
+        }
+        for vo in vo_to_remove_clip:
+            v.ren.RemoveActor(v.actors[f"{vo}_clipper"])
+
     v.addAxes(length=5000)
     v.axes[0].SetVisibility(False)  # hide axes by default.
 
