@@ -35,6 +35,7 @@ options:
 - `i` dump current camera info (focal point, up vector, position)
 - `v` toggle display of loaded points (see `--add-points`)
 - `F<n>` switch to scene n
+- `Home` switch to `default` scene
 - `+` zoom in
 - `-` zoom out
 
