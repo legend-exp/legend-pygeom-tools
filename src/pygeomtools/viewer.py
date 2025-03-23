@@ -36,7 +36,10 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     if scenes is None:
         scenes = {}
 
-    v = pyg4vis.VtkViewerColouredNew()
+    try:
+        v = pyg4vis.VtkViewerColouredNew(defaultCutters=False)
+    except TypeError:
+        v = pyg4vis.VtkViewerColouredNew()
     v.addLogicalVolume(registry.worldVolume)
 
     load_color_auxvals_recursive(registry.worldVolume)
