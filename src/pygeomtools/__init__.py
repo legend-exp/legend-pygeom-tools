@@ -19,6 +19,7 @@ __all__ = [
     "write_pygeom",
 ]
 
+
 # inspired by PEP 562.
 def __getattr__(name: str):
     if name in __all__:
