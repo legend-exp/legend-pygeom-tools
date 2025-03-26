@@ -71,14 +71,17 @@ def walk_detectors(
 
 def generate_detector_macro(registry: g4.Registry, filename: str) -> None:
     """Create a Geant4 macro file containing the defined active detector volumes for use in remage."""
+    if _get_rmg_detector_aux(registry, raise_on_missing=False) is not None:
+        sensvols = get_all_sensvols(registry)
+    else:
+        sensvols = {pv.name: det for pv, det in walk_detectors(registry)}
 
     macro_lines = {}
-
-    for pv, det in walk_detectors(registry):
-        if pv.name in macro_lines:
+    for pv, det in sensvols.items():
+        if pv in macro_lines:
             continue
-        mac = f"/RMG/Geometry/RegisterDetector {det.detector_type.title()} {pv.name} {det.uid}\n"
-        macro_lines[pv.name] = mac
+        mac = f"/RMG/Geometry/RegisterDetector {det.detector_type.title()} {pv} {det.uid}\n"
+        macro_lines[pv] = mac
 
     macro_contents = "".join(macro_lines.values())
 
