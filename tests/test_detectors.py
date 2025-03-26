@@ -74,6 +74,37 @@ def test_detector_info(tmp_path):
     assert detectors.get_sensvol_by_uid(registry, 5) is None
 
 
+def test_detector_typo(tmp_path):
+    from pygeomtools import RemageDetectorInfo, write_pygeom
+
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    scint = g4.solid.Box("scint", 0.5, 1, 1, registry, "m")
+    scint1 = g4.LogicalVolume(
+        scint, g4.MaterialPredefined("G4_lAr"), "scint1", registry
+    )
+    scint1pv = g4.PhysicalVolume(
+        [0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry
+    )
+    scint1pv.pygeom_active_dector = RemageDetectorInfo("scintillator", 3)
+    with pytest.deprecated_call():
+        assert scint1pv.get_pygeom_active_detector() is not None
+    with pytest.raises(AttributeError):
+        assert scint1pv.pygeom_active_detector is None
+    assert scint1pv.pygeom_active_dector is not None
+
+    with pytest.deprecated_call():
+        write_pygeom(registry, tmp_path / "geometry_typo.gdml")
+
+    # test read again
+    registry = pyg4ometry.gdml.Reader(tmp_path / "geometry_typo.gdml").getRegistry()
+
+
 def test_no_detector_info(tmp_path):
     from pygeomtools import detectors, write_pygeom
 

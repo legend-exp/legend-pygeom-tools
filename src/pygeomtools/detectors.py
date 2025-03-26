@@ -185,12 +185,27 @@ def __set_pygeom_active_detector(self, det_info: RemageDetectorInfo | None) -> N
 
 
 def __get_pygeom_active_detector(self) -> RemageDetectorInfo | None:
-    """Get the remage detector info on this physical volume instance."""
+    """Get the remage detector info on this physical volume instance.
+
+    Important
+    ---------
+    this only returns instances previously set via :meth:`get_pygeom_active_detector`,
+    not data loaded from GDML.
+    """
     if not isinstance(self, g4.PhysicalVolume):
         msg = "patched-in function called on wrong type"
         raise TypeError(msg)
     if hasattr(self, "pygeom_active_detector"):
         return self.pygeom_active_detector
+    if hasattr(self, "pygeom_active_dector"):
+        import warnings
+
+        warnings.warn(
+            "pygeom_active_dector (typo!) is deprecated, use pygeom_active_detector instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.pygeom_active_dector
     return None
 
 
