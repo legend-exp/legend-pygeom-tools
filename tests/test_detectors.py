@@ -91,15 +91,14 @@ def test_detector_typo(tmp_path):
     scint1pv = g4.PhysicalVolume(
         [0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry
     )
-    scint1pv.pygeom_active_dector = RemageDetectorInfo("scintillator", 3)
     with pytest.deprecated_call():
-        assert scint1pv.get_pygeom_active_detector() is not None
-    with pytest.raises(AttributeError):
-        assert scint1pv.pygeom_active_detector is None
-    assert scint1pv.pygeom_active_dector is not None
+        scint1pv.pygeom_active_dector = RemageDetectorInfo("scintillator", 3)
+    assert scint1pv.get_pygeom_active_detector() is not None
+    assert scint1pv.pygeom_active_detector is not None
+    with pytest.deprecated_call():
+        assert scint1pv.pygeom_active_dector is not None
 
-    with pytest.deprecated_call():
-        write_pygeom(registry, tmp_path / "geometry_typo.gdml")
+    write_pygeom(registry, tmp_path / "geometry_typo.gdml")
 
     # test read again
     registry = pyg4ometry.gdml.Reader(tmp_path / "geometry_typo.gdml").getRegistry()

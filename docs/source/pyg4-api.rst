@@ -9,7 +9,7 @@ Detector registration
     .. py:method:: set_pygeom_active_detector(det_info)
 
        :param det_info:
-       :type det_info: RemageDetectorInfo
+       :type det_info: RemageDetectorInfo | None
 
        Set the remage detector info on this physical volume instance.
 
@@ -19,17 +19,17 @@ Detector registration
 
        Get the remage detector info on this physical volume instance.
 
+       .. important::
+           this only returns instances previously set via :meth:`set_pygeom_active_detector` or
+           :attr:`pygeom_active_detector`, not data loaded from GDML.
+
     .. py:attribute:: pygeom_active_detector
 
-        :type: RemageDetectorInfo
-        :value: (initially not set)
+        :type: RemageDetectorInfo | None
         :deprecated: use :meth:`set_pygeom_active_detector`/:meth:`get_pygeom_active_detector` instead
 
         get or set the active detector instance.
 
-        .. warning::
-
-            will raise an :class:`AttributeError` if trying to access without setting first.
 
 Visualization
 -------------

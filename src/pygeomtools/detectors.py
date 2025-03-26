@@ -44,27 +44,16 @@ def walk_detectors(
 
     Important
     ---------
-    this only returns instances previously set via :meth:`get_pygeom_active_detector`,
+    this only returns instances previously set via
+    :meth:`get_pygeom_active_detector() <pyg4ometry.geant4.PhysicalVolume.get_pygeom_active_detector>`,
     not data loaded from GDML. Use :meth:`get_all_sensvols` instead for that use case.
     """
 
     if isinstance(pv, g4.PhysicalVolume):
-        det = None
-        if hasattr(pv, "pygeom_active_detector"):
-            det = pv.pygeom_active_detector
-        elif hasattr(pv, "pygeom_active_dector"):
-            import warnings
-
-            warnings.warn(
-                "pygeom_active_dector (typo!) is deprecated, use pygeom_active_detector instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            det = pv.pygeom_active_dector
+        det = pv.get_pygeom_active_detector()
         if det is not None:
             assert isinstance(det, RemageDetectorInfo)
             yield pv, det
-
     if isinstance(pv, g4.LogicalVolume):
         next_v = pv
     if isinstance(pv, g4.PhysicalVolume):
@@ -101,7 +90,7 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
     """Append an auxiliary structure, storing the sensitive detector volume information.
 
     .. note::
-        see <metadata> for a reference of the written structure.
+        see :doc:`../metadata` for a reference of the written structure.
     """
     if _get_rmg_detector_aux(registry, raise_on_missing=False) is not None:
         msg = "detector auxiliary structure already written"
@@ -195,39 +184,44 @@ def __set_pygeom_active_detector(self, det_info: RemageDetectorInfo | None) -> N
     if _get_rmg_detector_aux(self.registry, raise_on_missing=False) is not None:
         msg = "detector auxiliary structure already written"
         raise RuntimeError(msg)
-    self.pygeom_active_detector = det_info
+    self.__pygeom_active_detector = det_info
 
 
 def __get_pygeom_active_detector(self) -> RemageDetectorInfo | None:
-    """Get the remage detector info on this physical volume instance.
-
-    Important
-    ---------
-    this only returns instances previously set via :meth:`get_pygeom_active_detector`,
-    not data loaded from GDML.
-    """
+    """Get the remage detector info on this physical volume instance."""
     if not isinstance(self, g4.PhysicalVolume):
         msg = "patched-in function called on wrong type"
         raise TypeError(msg)
-    assert self.registry is not None
-    if _get_rmg_detector_aux(self.registry, raise_on_missing=False) is not None:
-        msg = "detector auxiliary structure already written"
-        raise RuntimeError(msg)
 
-    if hasattr(self, "pygeom_active_detector"):
-        return self.pygeom_active_detector
-    if hasattr(self, "pygeom_active_dector"):
-        import warnings
-
-        warnings.warn(
-            "pygeom_active_dector (typo!) is deprecated, use pygeom_active_detector instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.pygeom_active_dector
+    if hasattr(self, "__pygeom_active_detector"):
+        return self.__pygeom_active_detector
     return None
 
 
-# monkey-patch a new function onto every PhysicalVolume instance:
-g4.PhysicalVolume.set_pygeom_active_detector = __set_pygeom_active_detector
-g4.PhysicalVolume.get_pygeom_active_detector = __get_pygeom_active_detector
+def __patch_pyg4_pv():
+    """monkey-patch a new function onto every PhysicalVolume instance."""
+    t = g4.PhysicalVolume
+    t.set_pygeom_active_detector = __set_pygeom_active_detector
+    t.get_pygeom_active_detector = __get_pygeom_active_detector
+
+    prop = property(__get_pygeom_active_detector)
+    t.pygeom_active_detector = prop.setter(__set_pygeom_active_detector)
+
+    def _wrap_warn(fn):
+        def _fn(*args):
+            import warnings
+
+            warnings.warn(
+                "pygeom_active_dector (typo!) is deprecated, use pygeom_active_detector instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return fn(*args)
+
+        return _fn
+
+    prop = property(_wrap_warn(__get_pygeom_active_detector))
+    t.pygeom_active_dector = prop.setter(_wrap_warn(__set_pygeom_active_detector))
+
+
+__patch_pyg4_pv()
