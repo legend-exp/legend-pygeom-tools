@@ -165,6 +165,17 @@ def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
     return detmapping
 
 
+def get_sensvol_by_uid(
+    registry: g4.Registry, uid: int
+) -> tuple[str, RemageDetectorInfo] | None:
+    """Get the volume name and detector metadata for the detector with remage detector ID `uid`."""
+    sensvols = get_all_sensvols(registry)
+    found = next(filter(lambda s: s[1].uid == uid, sensvols.items()), None)
+    if found is None:
+        return None
+    return found
+
+
 def __set_pygeom_active_detector(self, det_info: RemageDetectorInfo | None) -> None:
     """Set the remage detector info on this physical volume instance."""
     if not isinstance(self, g4.PhysicalVolume):

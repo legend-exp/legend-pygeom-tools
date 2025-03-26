@@ -69,6 +69,10 @@ def test_detector_info(tmp_path):
     assert set(sensvols.keys()) == {"det2", "det1", "scint1", "scint2"}
     assert sensvols["scint1"].uid == 3
 
+    # test retrieval by uid.
+    assert detectors.get_sensvol_by_uid(registry, 3) == ("scint1", sensvols["scint1"])
+    assert detectors.get_sensvol_by_uid(registry, 5) is None
+
 
 def test_no_detector_info(tmp_path):
     from pygeomtools import detectors, write_pygeom
@@ -94,7 +98,7 @@ def test_no_detector_info(tmp_path):
 
 
 def test_wrong_write(tmp_path):
-    from pygeomtools import detectors, write_pygeom
+    from pygeomtools import detectors
 
     registry = g4.Registry()
     world = g4.solid.Box("world", 2, 2, 2, registry, "m")
@@ -112,8 +116,12 @@ def test_wrong_write(tmp_path):
     w.write(str(tmp_path / "geometry_wrong_write.gdml"))
 
     # test read again
-    registry = pyg4ometry.gdml.Reader(tmp_path / "geometry_wrong_write.gdml").getRegistry()
+    registry = pyg4ometry.gdml.Reader(
+        tmp_path / "geometry_wrong_write.gdml"
+    ).getRegistry()
     with pytest.raises(RuntimeError):
         detectors.get_sensvol_metadata(registry, "det1")
     with pytest.raises(RuntimeError):
         detectors.get_all_sensvols(registry)
+    with pytest.raises(RuntimeError):
+        detectors.get_sensvol_by_uid(registry, 5)
