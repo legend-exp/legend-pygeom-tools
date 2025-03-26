@@ -16,6 +16,9 @@ from pyg4ometry.gdml.Defines import Auxiliary
 
 log = logging.getLogger(__name__)
 
+AUXKEY_DETMETA = "RMG_detector_meta"
+AUXKEY_DET = "RMG_detector"
+
 
 @dataclass
 class RemageDetectorInfo:
@@ -100,13 +103,17 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
     .. note::
         see <metadata> for a reference of the written structure.
     """
+    if _get_rmg_detector_aux(registry, raise_on_missing=False) is not None:
+        msg = "detector auxiliary structure already written"
+        raise RuntimeError(msg)
+
     written_pvs = set()
     group_it = groupby(walk_detectors(registry), lambda d: d[1].detector_type)
 
-    meta_group_aux = Auxiliary("RMG_detector_meta", "", registry)
+    meta_group_aux = Auxiliary(AUXKEY_DETMETA, "", registry)
 
     for key, group in group_it:
-        group_aux = Auxiliary("RMG_detector", key, registry)
+        group_aux = Auxiliary(AUXKEY_DET, key, registry)
 
         for pv, det in group:
             if pv.name in written_pvs:
@@ -123,15 +130,22 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
                 )
 
 
-def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
-    """Load metadata attached to the given sensitive volume (from GDML)."""
-    auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector_meta"]
+def _get_rmg_detector_aux(
+    registry: g4.Registry, *, raise_on_missing: bool = True
+) -> Auxiliary | None:
+    auxs = [aux for aux in registry.userInfo if aux.auxtype == AUXKEY_DETMETA]
     if auxs == []:
-        msg = "GDML missing RMG_detector_meta auxval (not written by legend-pygeom-tools?)"
+        if not raise_on_missing:
+            return None
+        msg = f"GDML missing {AUXKEY_DETMETA} auxval (not written by legend-pygeom-tools?)"
         raise RuntimeError(msg)
     assert len(auxs) == 1
-    meta_aux = auxs[0]
+    return auxs[0]
 
+
+def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
+    """Load metadata attached to the given sensitive volume (from GDML)."""
+    meta_aux = _get_rmg_detector_aux(registry)
     meta_auxs = [aux for aux in meta_aux.subaux if aux.auxtype == name]
     if meta_auxs == []:
         return None
@@ -141,17 +155,13 @@ def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
 
 def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
     """Load all registered sensitive detectors with their metadata (from GDML)."""
-    auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector_meta"]
-    if auxs == []:
-        msg = "GDML missing RMG_detector_meta auxval (not written by legend-pygeom-tools?)"
-        raise RuntimeError(msg)
-    assert len(auxs) == 1
+    meta_aux = _get_rmg_detector_aux(registry)
     meta_auxs = {
-        aux.auxtype: AttrsDict(json.loads(aux.auxvalue)) for aux in auxs[0].subaux
+        aux.auxtype: AttrsDict(json.loads(aux.auxvalue)) for aux in meta_aux.subaux
     }
 
     detmapping = {}
-    type_auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector"]
+    type_auxs = [aux for aux in registry.userInfo if aux.auxtype == AUXKEY_DET]
     for type_aux in type_auxs:
         for det_aux in type_aux.subaux:
             detmapping[det_aux.auxtype] = RemageDetectorInfo(
@@ -181,6 +191,10 @@ def __set_pygeom_active_detector(self, det_info: RemageDetectorInfo | None) -> N
     if not isinstance(self, g4.PhysicalVolume):
         msg = "patched-in function called on wrong type"
         raise TypeError(msg)
+    assert self.registry is not None
+    if _get_rmg_detector_aux(self.registry, raise_on_missing=False) is not None:
+        msg = "detector auxiliary structure already written"
+        raise RuntimeError(msg)
     self.pygeom_active_detector = det_info
 
 
@@ -195,6 +209,11 @@ def __get_pygeom_active_detector(self) -> RemageDetectorInfo | None:
     if not isinstance(self, g4.PhysicalVolume):
         msg = "patched-in function called on wrong type"
         raise TypeError(msg)
+    assert self.registry is not None
+    if _get_rmg_detector_aux(self.registry, raise_on_missing=False) is not None:
+        msg = "detector auxiliary structure already written"
+        raise RuntimeError(msg)
+
     if hasattr(self, "pygeom_active_detector"):
         return self.pygeom_active_detector
     if hasattr(self, "pygeom_active_dector"):
