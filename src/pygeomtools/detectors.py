@@ -37,7 +37,13 @@ class RemageDetectorInfo:
 def walk_detectors(
     pv: g4.PhysicalVolume | g4.LogicalVolume | g4.Registry,
 ) -> Generator[tuple[g4.PhysicalVolume, RemageDetectorInfo], None, None]:
-    """Iterate over all physical volumes that have a :class:`RemageDetectorInfo` attached."""
+    """Iterate over all physical volumes that have a :class:`RemageDetectorInfo` attached.
+
+    Important
+    ---------
+    this only returns instances previously set via :meth:`get_pygeom_active_detector`,
+    not data loaded from GDML. Use :meth:`get_all_sensvols` instead for that use case.
+    """
 
     if isinstance(pv, g4.PhysicalVolume):
         det = None
@@ -92,7 +98,7 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
     """Append an auxiliary structure, storing the sensitive detector volume information.
 
     .. note::
-        see <metadata> for a reference
+        see <metadata> for a reference of the written structure.
     """
     written_pvs = set()
     group_it = groupby(walk_detectors(registry), lambda d: d[1].detector_type)
@@ -118,12 +124,13 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
 
 
 def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
-    """Load metadata attached to the given sensitive volume."""
+    """Load metadata attached to the given sensitive volume (from GDML)."""
     auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector_meta"]
     if auxs == []:
-        return None
-    meta_aux = auxs[0]
+        msg = "GDML missing RMG_detector_meta auxval (not written by legend-pygeom-tools?)"
+        raise RuntimeError(msg)
     assert len(auxs) == 1
+    meta_aux = auxs[0]
 
     meta_auxs = [aux for aux in meta_aux.subaux if aux.auxtype == name]
     if meta_auxs == []:
@@ -133,15 +140,15 @@ def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
 
 
 def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
-    """Load all registered sensitive detectors with their metadata."""
+    """Load all registered sensitive detectors with their metadata (from GDML)."""
     auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector_meta"]
     if auxs == []:
-        meta_auxs = {}
-    else:
-        assert len(auxs) == 1
-        meta_auxs = {
-            aux.auxtype: AttrsDict(json.loads(aux.auxvalue)) for aux in auxs[0].subaux
-        }
+        msg = "GDML missing RMG_detector_meta auxval (not written by legend-pygeom-tools?)"
+        raise RuntimeError(msg)
+    assert len(auxs) == 1
+    meta_auxs = {
+        aux.auxtype: AttrsDict(json.loads(aux.auxvalue)) for aux in auxs[0].subaux
+    }
 
     detmapping = {}
     type_auxs = [aux for aux in registry.userInfo if aux.auxtype == "RMG_detector"]
@@ -152,7 +159,7 @@ def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
             )
 
     if set(meta_auxs.keys()) - set(detmapping.keys()) != set():
-        msg = "invalid GDML auxval structure"
+        msg = "invalid GDML auxval structure (meta keys and detmapping keys differ)"
         raise RuntimeError(msg)
 
     return detmapping
