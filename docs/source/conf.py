@@ -39,10 +39,9 @@ html_theme_options = {
 html_title = f"{project} {version}"
 
 exclude_members = (
-    # ignore some common members from NamedTuples.
-    "_asdict, _fields, _field_defaults, _make, _replace, "
-    # ...and some internal of ours.
-    + "__get_pygeom_active_detector, __set_pygeom_active_detector, __patch_pyg4_pv, _get_rmg_detector_aux, _KeyboardInteractor"
+    "_asdict, _fields, _field_defaults, _make, _replace, "  # ignore some common members from NamedTuples.
+    + "_abc_impl, "  # ... and from abstract classes.
+    + "__get_pygeom_active_detector, __set_pygeom_active_detector, _KeyboardInteractor"  # ...and some internal of ours.
 )
 
 autodoc_default_options = {
