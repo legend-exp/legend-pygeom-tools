@@ -49,7 +49,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     # add clippers.
     clippers = scenes.get("clipper", [])
     clippers_to_remove = []
-    if len(clippers) != 1:
+    if len(clippers) > 1:
         msg = "only one clipper can be set at the same time."
         raise ValueError(msg)
     for clip in clippers:
