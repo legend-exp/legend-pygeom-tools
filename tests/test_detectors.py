@@ -47,10 +47,10 @@ def test_detector_info(tmp_path):
     write_pygeom(registry, tmp_path / "geometry.gdml")
     detectors.generate_detector_macro(registry, tmp_path / "geometry.mac")
     expected_macro = """
-/RMG/Geometry/RegisterDetector Scintillator scint1 3
-/RMG/Geometry/RegisterDetector Optical det1 1
-/RMG/Geometry/RegisterDetector Scintillator scint2 3
 /RMG/Geometry/RegisterDetector Germanium det2 2
+/RMG/Geometry/RegisterDetector Optical det1 1
+/RMG/Geometry/RegisterDetector Scintillator scint1 3
+/RMG/Geometry/RegisterDetector Scintillator scint2 3
 """
     assert (tmp_path / "geometry.mac").read_text().strip() == expected_macro.strip()
 
