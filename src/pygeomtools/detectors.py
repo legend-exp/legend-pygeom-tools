@@ -100,7 +100,10 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
         raise RuntimeError(msg)
 
     written_pvs = set()
-    group_it = groupby(walk_detectors(registry), lambda d: d[1].detector_type)
+    group_it = groupby(
+        sorted(walk_detectors(registry), key=lambda d: d[1].detector_type),
+        lambda d: d[1].detector_type,
+    )
 
     meta_group_aux = Auxiliary(AUXKEY_DETMETA, "", registry)
 

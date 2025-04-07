@@ -47,16 +47,25 @@ def test_detector_info(tmp_path):
     write_pygeom(registry, tmp_path / "geometry.gdml")
     detectors.generate_detector_macro(registry, tmp_path / "geometry.mac")
     expected_macro = """
-/RMG/Geometry/RegisterDetector Scintillator scint1 3
-/RMG/Geometry/RegisterDetector Optical det1 1
-/RMG/Geometry/RegisterDetector Scintillator scint2 3
 /RMG/Geometry/RegisterDetector Germanium det2 2
+/RMG/Geometry/RegisterDetector Optical det1 1
+/RMG/Geometry/RegisterDetector Scintillator scint1 3
+/RMG/Geometry/RegisterDetector Scintillator scint2 3
 """
     assert (tmp_path / "geometry.mac").read_text().strip() == expected_macro.strip()
 
     # test read again
     registry = pyg4ometry.gdml.Reader(tmp_path / "geometry.gdml").getRegistry()
 
+    all_top_level_aux = [(aux.auxtype, aux.auxvalue) for aux in registry.userInfo]
+    assert all_top_level_aux == [
+        ("RMG_detector_meta", ""),
+        ("RMG_detector", "germanium"),
+        ("RMG_detector", "optical"),
+        ("RMG_detector", "scintillator"),
+    ]
+
+    # test that our API functions work.
     assert detectors.get_sensvol_metadata(registry, "det2") == {
         "other": "other metadata"
     }
@@ -75,7 +84,7 @@ def test_detector_info(tmp_path):
 
 
 def test_detector_typo(tmp_path):
-    from pygeomtools import RemageDetectorInfo, write_pygeom
+    from pygeomtools import RemageDetectorInfo, detectors, write_pygeom
 
     registry = g4.Registry()
     world = g4.solid.Box("world", 2, 2, 2, registry, "m")
@@ -103,6 +112,17 @@ def test_detector_typo(tmp_path):
     # test read again
     registry = pyg4ometry.gdml.Reader(tmp_path / "geometry_typo.gdml").getRegistry()
 
+    all_top_level_aux = [(aux.auxtype, aux.auxvalue) for aux in registry.userInfo]
+    assert all_top_level_aux == [
+        ("RMG_detector_meta", ""),
+        ("RMG_detector", "scintillator"),
+    ]
+
+    sensvols = detectors.get_all_sensvols(registry)
+    assert set(sensvols.keys()) == {"scint1"}
+    assert sensvols["scint1"].uid == 3
+    assert detectors.get_sensvol_by_uid(registry, 3) == ("scint1", sensvols["scint1"])
+
 
 def test_no_detector_info(tmp_path):
     from pygeomtools import detectors, write_pygeom
@@ -125,6 +145,10 @@ def test_no_detector_info(tmp_path):
     # test read again
     registry = pyg4ometry.gdml.Reader(tmp_path / "geometry_no_det.gdml").getRegistry()
     assert detectors.get_sensvol_metadata(registry, "det1") is None
+
+    all_top_level_aux = [(aux.auxtype, aux.auxvalue) for aux in registry.userInfo]
+    assert all_top_level_aux == [("RMG_detector_meta", "")]
+    assert registry.userInfo[0].subaux == []
 
 
 def test_wrong_write(tmp_path):
@@ -155,3 +179,6 @@ def test_wrong_write(tmp_path):
         detectors.get_all_sensvols(registry)
     with pytest.raises(RuntimeError):
         detectors.get_sensvol_by_uid(registry, 5)
+
+    all_top_level_aux = [(aux.auxtype, aux.auxvalue) for aux in registry.userInfo]
+    assert all_top_level_aux == []
