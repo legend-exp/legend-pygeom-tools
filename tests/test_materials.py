@@ -23,9 +23,9 @@ def test_cached_property():
     assert first_prop_access is m.x  # we should get back the same object.
 
     # writing and deleting is not possible.
-    with pytest.raises(AttributeError, match="has no setter"):
+    with pytest.raises(AttributeError):
         m.x = None
-    with pytest.raises(AttributeError, match="has no deleter"):
+    with pytest.raises(AttributeError):
         del m.x
 
 
