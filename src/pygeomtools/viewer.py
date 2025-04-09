@@ -127,7 +127,11 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
             ax.SetVisibility(not ax.GetVisibility())
             self.ren.GetRenderWindow().Render()
 
-        if key == "v" and self.vtkviewer.points is not None:  # toggle _v_ertices
+        if (
+            key == "v"  # toggle _v_ertices
+            and hasattr(self.vtkviewer, "points")
+            and self.vtkviewer.points is not None
+        ):
             pn = self.vtkviewer.points
             pn.SetVisibility(not ax.GetVisibility())
             self.ren.GetRenderWindow().Render()
