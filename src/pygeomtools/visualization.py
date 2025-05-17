@@ -44,6 +44,8 @@ def write_color_auxvals(registry: g4.Registry) -> None:
                 rgba = "-1"
             else:
                 rgba = ",".join([str(c) for c in lv.pygeom_color_rgba])
+            # remove existing colors.
+            lv.auxiliary = [aux for aux in lv.auxiliary if aux.auxtype != "rmg_color"]
             lv.addAuxiliaryInfo(
                 Auxiliary("rmg_color", rgba, registry, addRegistry=False)
             )
@@ -63,9 +65,12 @@ def write_color_auxvals(registry: g4.Registry) -> None:
 
 def load_color_auxvals_recursive(lv: g4.LogicalVolume) -> None:
     auxvals = list(filter(lambda aux: aux.auxtype == "rmg_color", lv.auxiliary))
-    assert len(auxvals) <= 1
-    if len(auxvals) == 1 and not hasattr(lv, "pygeom_color_rgba"):
-        rgba = auxvals[0].auxvalue
+    if len(auxvals) > 1:
+        log.warning("more than one rmg_color for LV %s", lv.name)
+    # assert len(auxvals) <= 1
+
+    if len(auxvals) > 0 and not hasattr(lv, "pygeom_color_rgba"):
+        rgba = auxvals[-1].auxvalue
         if rgba == "-1":
             lv.pygeom_color_rgba = False
         else:
