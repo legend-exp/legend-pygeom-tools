@@ -59,6 +59,40 @@ def test_vis_macro(tmp_path):
     assert generated_macro.strip() == expected_macro.strip()
 
 
+def test_double_write(tmp_path):
+    from pygeomtools import visualization, write_pygeom
+
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    scint = g4.solid.Box("scint", 0.5, 1, 1, registry, "m")
+    scint1 = g4.LogicalVolume(
+        scint, g4.MaterialPredefined("G4_lAr"), "scint1", registry
+    )
+    scint2 = g4.LogicalVolume(
+        scint, g4.MaterialPredefined("G4_lAr"), "scint2", registry
+    )
+    g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry)
+    g4.PhysicalVolume([0, 0, 0], [+255, 0, 0], scint2, "scint2", world_lv, registry)
+    scint1.pygeom_color_rgba = False
+    scint2.pygeom_color_rgba = [1, 0, 1, 0.5]
+
+    write_pygeom(registry, tmp_path / "geometry-vis.gdml")
+
+    # simulate a second write
+    registry.userInfo = []
+    write_pygeom(registry, tmp_path / "geometry-vis.gdml")
+
+    # test read again
+    registry = pyg4ometry.gdml.Reader(tmp_path / "geometry-vis.gdml").getRegistry()
+
+    visualization.load_color_auxvals_recursive(registry.worldVolume)
+
+
 def test_vis_typo(tmp_path):
     from pygeomtools import write_pygeom
 
