@@ -406,6 +406,7 @@ def vis_gdml_cli() -> None:
 
     args = parser.parse_args()
 
+    logging.basicConfig()
     if args.verbose:
         logging.getLogger("pygeomtools").setLevel(logging.DEBUG)
     if args.debug:
