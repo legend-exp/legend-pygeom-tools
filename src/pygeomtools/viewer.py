@@ -142,6 +142,9 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
         if key == "t":  # _t_op
             _set_camera(self.vtkviewer, up=(1, 0, 0), pos=(0, 0, +20000))
 
+        if key == "b":  # _b_ottom
+            _set_camera(self.vtkviewer, up=(-1, 0, 0), pos=(0, 0, -20000))
+
         if key == "p":  # _p_arralel projection
             cam = self.ren.GetActiveCamera()
             _set_camera(self.vtkviewer, parallel=not cam.GetParallelProjection())
