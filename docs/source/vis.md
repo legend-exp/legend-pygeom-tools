@@ -30,6 +30,7 @@ options:
 - `a` show/hide axes
 - `u` side view
 - `t` view from top
+- `b` view from bottom
 - `p` toggle parallel projection
 - `s` save screenshot
 - `i` dump current camera info (focal point, up vector, position)
