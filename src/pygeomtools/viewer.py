@@ -89,7 +89,12 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
             scene_points["table"],
             scene_points.get("columns", ["xloc", "yloc", "zloc"]),
         )
-        _add_points(v, points_array, scene_points.get("color", (1, 1, 0, 1)))
+        _add_points(
+            v,
+            points_array,
+            scene_points.get("color", (1, 1, 0, 1)),
+            scene_points.get("size", 5),
+        )
 
     # add light and shadow.
     if "light" in scenes:
@@ -241,7 +246,7 @@ def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name="scene.png") -> None:
     png.Write()
 
 
-def _add_points(v, points, color=(1, 1, 0, 1)) -> None:
+def _add_points(v, points, color=(1, 1, 0, 1), size=5) -> None:
     # create vtkPolyData from points.
     vp = vtk.vtkPoints()
     ca = vtk.vtkCellArray()
@@ -263,7 +268,7 @@ def _add_points(v, points, color=(1, 1, 0, 1)) -> None:
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
     actor.GetProperty().SetColor(*color[0:3])
-    actor.GetProperty().SetPointSize(5)
+    actor.GetProperty().SetPointSize(size)
     actor.GetProperty().SetOpacity(color[3])
     actor.GetProperty().SetRenderPointsAsSpheres(True)
 
