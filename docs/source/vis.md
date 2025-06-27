@@ -98,6 +98,7 @@ points:
     table: stp/vertices
     columns: ["xloc", "yloc", "zloc"]
     color: [0, 1, 0, 1] # rgba tuple.
+    size: 5 # marker size.
 
 # add light and shadows.
 light:
