@@ -97,6 +97,7 @@ points:
   - file: test-points.lh5
     table: stp/vertices
     columns: ["xloc", "yloc", "zloc"]
+    n_rows: null # = all rows, or a number as a limit.
     color: [0, 1, 0, 1] # rgba tuple.
     size: 5 # marker size.
 

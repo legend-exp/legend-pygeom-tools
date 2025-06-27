@@ -88,6 +88,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
             scene_points["file"],
             scene_points["table"],
             scene_points.get("columns", ["xloc", "yloc", "zloc"]),
+            scene_points.get("n_rows", None),
         )
         _add_points(
             v,
@@ -276,7 +277,9 @@ def _add_points(v, points, color=(1, 1, 0, 1), size=5) -> None:
     v.points = actor
 
 
-def _load_points(lh5_file: str, point_table: str, columns: list[str]):
+def _load_points(
+    lh5_file: str, point_table: str, columns: list[str], n_rows: int | None
+):
     import pint
     from lgdo import lh5
 
@@ -286,7 +289,7 @@ def _load_points(lh5_file: str, point_table: str, columns: list[str]):
         str(columns),
         lh5_file,
     )
-    point_table = lh5.read(point_table, lh5_file)
+    point_table = lh5.read(point_table, lh5_file, n_rows=n_rows)
 
     # the points need to be in mm.
     u = pint.get_application_registry()
@@ -436,7 +439,7 @@ def vis_gdml_cli() -> None:
             msg = "invalid parameter for points"
             raise ValueError(msg)
 
-        points = _load_points(args.add_points, point_table, point_columns)
+        points = _load_points(args.add_points, point_table, point_columns, None)
 
     log.info("loading GDML geometry from %s", args.filename)
     registry = gdml.Reader(args.filename).getRegistry()
