@@ -1,16 +1,15 @@
 # Configuration file for the Sphinx documentation builder.
 from __future__ import annotations
 
+import importlib.metadata
 import sys
 from pathlib import Path
-
-from pkg_resources import get_distribution
 
 sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
 
 project = "legend-pygeom-tools"
 copyright = "The LEGEND Collaboration"
-version = get_distribution("legend-pygeom-tools").version
+version = importlib.metadata.version("legend-pygeom-tools")
 
 extensions = [
     "sphinx.ext.githubpages",
@@ -60,7 +59,7 @@ napoleon_use_rtype = False
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "pandas": ("https://pandas.pydata.org/docs", None),
     "matplotlib": ("https://matplotlib.org/stable", None),
     "pint": ("https://pint.readthedocs.io/en/stable", None),
