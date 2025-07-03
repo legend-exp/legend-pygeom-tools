@@ -101,8 +101,11 @@ points:
     color: [0, 1, 0, 1] # rgba tuple.
     size: 5 # marker size.
 
-# add light and shadows.
+# add a light source and shadows to produce a nicer looking rendering.
 light:
   pos: [5000, 5000, 2000]
   shadow: true
+
+# with this setting, the exported PNG files can be larger than the rendering window.
+export_scale: 1
 ```

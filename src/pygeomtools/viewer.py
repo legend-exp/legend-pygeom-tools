@@ -42,6 +42,8 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
         v = pyg4vis.VtkViewerColouredNew()
     v.addLogicalVolume(registry.worldVolume)
 
+    v.pygeom_scenes = scenes
+
     load_color_auxvals_recursive(registry.worldVolume)
     registry.worldVolume.pygeom_color_rgba = False  # hide the wireframe of the world.
     _color_recursive(registry.worldVolume, v, scenes.get("color_overrides", {}))
@@ -224,11 +226,10 @@ def _set_camera_scene(v: pyg4vis.VtkViewerColouredNew, sc: dict) -> None:
         )
 
 
-def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name="scene.png") -> None:
-    ifil = vtk.vtkWindowToImageFilter()
-    ifil.SetInput(v.renWin)
-    ifil.ReadFrontBufferOff()
-    ifil.Update()
+def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name: str = "scene.png") -> None:
+    larger = vtk.vtkRenderLargeImage()
+    larger.SetInput(v.ren)
+    larger.SetMagnification(v.pygeom_scenes.get("export_scale", 1))
 
     # get a non-colliding file name.
     p = Path(file_name)
@@ -243,7 +244,7 @@ def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name="scene.png") -> None:
 
     png = vtk.vtkPNGWriter()
     png.SetFileName(str(p.absolute()))
-    png.SetInputConnection(ifil.GetOutputPort())
+    png.SetInputConnection(larger.GetOutputPort())
     png.Write()
 
 
