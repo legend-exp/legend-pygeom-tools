@@ -259,13 +259,36 @@ def _add_points(v, points, color=(1, 1, 0, 1), size=5) -> None:
         ca.InsertNextCell(1)
         ca.InsertCellPoint(p)
 
+    # H, edges = np.histogramdd(points, bins=50)
+    # H /= H.max()
+
+    # fd_np = np.zeros(points.shape[0])
+    # idx = [np.digitize(points[:, col], edges[col]) - 2 for col in range(points.shape[1])]
+    # fd_np = H[*idx]
+    # fd = vtk.vtkFloatArray()
+    # fd.SetNumberOfValues(len(fd_np))
+    # for i, f in enumerate(fd_np):
+    #    fd.SetValue(i, f)
+
     pd.SetPoints(vp)
     pd.SetVerts(ca)
+    # pd.GetPointData().SetScalars(fd)
+
+    # lut = vtk.vtkLookupTable()
+    # lut.SetTableRange(0, 1)
+    # lut.SetHueRange(1, 1)
+    # lut.SetSaturationRange(1, 1)
+    # lut.SetValueRange(1, 1)
+    # lut.SetAlphaRange(0.1, 1)
+    # lut.Build()
 
     # add points to renderer.
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputData(pd)
     mapper.ScalarVisibilityOff()
+    # mapper.ScalarVisibilityOn()
+    # mapper.SetScalarRange(0, 1)
+    # mapper.SetLookupTable(lut)
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
@@ -281,8 +304,8 @@ def _add_points(v, points, color=(1, 1, 0, 1), size=5) -> None:
 def _load_points(
     lh5_file: str, point_table: str, columns: list[str], n_rows: int | None
 ):
-    import pint
-    from lgdo import lh5
+    import numpy as np
+    from lgdo import VectorOfVectors, lh5
 
     log.info(
         "loading table %s (with columns %s) from file %s",
@@ -290,14 +313,22 @@ def _load_points(
         str(columns),
         lh5_file,
     )
-    point_table = lh5.read(point_table, lh5_file, n_rows=n_rows)
+    extra_kwargs = {}
+    if n_rows is not None:
+        extra_kwargs["n_rows"] = n_rows
+    point_table = lh5.read(point_table, lh5_file, **extra_kwargs)
 
     # the points need to be in mm.
-    u = pint.get_application_registry()
-    units = [u(point_table[c].getattrs().get("units", "")) for c in columns]
-    units = [(un / u.mm).to("dimensionless").m for un in units]
+    cols = []
+    for c in columns:
+        col = point_table[c]
+        if isinstance(col, VectorOfVectors):
+            col = col.flattened_data.view_as("np", with_units=True)
+        else:
+            col = col.view_as("np", with_units=True)
+        cols.append(col.to("mm").m)
 
-    return point_table.view_as("pd")[columns].to_numpy() * units
+    return np.array(cols).T
 
 
 def _color_override_matches(overrides: dict, name: str):
@@ -407,7 +438,7 @@ def vis_gdml_cli() -> None:
     )
     parser.add_argument(
         "--add-points-columns",
-        default="stp/vertices:xloc,yloc,zloc",
+        default="vtx:xloc,yloc,zloc",
         help="""columns in the point file %(default)s""",
     )
 
