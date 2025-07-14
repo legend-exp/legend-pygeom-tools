@@ -8,6 +8,7 @@ import logging
 import re
 from pathlib import Path
 
+import numpy as np
 import pyg4ometry.geant4 as g4
 import vtk
 from pyg4ometry import config as meshconfig
@@ -281,8 +282,7 @@ def _add_points(v, points, color=(1, 1, 0, 1), size=5) -> None:
 def _load_points(
     lh5_file: str, point_table: str, columns: list[str], n_rows: int | None
 ):
-    import pint
-    from lgdo import lh5
+    from lgdo import VectorOfVectors, lh5
 
     log.info(
         "loading table %s (with columns %s) from file %s",
@@ -290,14 +290,22 @@ def _load_points(
         str(columns),
         lh5_file,
     )
-    point_table = lh5.read(point_table, lh5_file, n_rows=n_rows)
+    extra_kwargs = {}
+    if n_rows is not None:
+        extra_kwargs["n_rows"] = n_rows
+    point_table = lh5.read(point_table, lh5_file, **extra_kwargs)
 
     # the points need to be in mm.
-    u = pint.get_application_registry()
-    units = [u(point_table[c].getattrs().get("units", "")) for c in columns]
-    units = [(un / u.mm).to("dimensionless").m for un in units]
+    cols = []
+    for c in columns:
+        col = point_table[c]
+        if isinstance(col, VectorOfVectors):
+            col = col.flattened_data.view_as("np", with_units=True)
+        else:
+            col = col.view_as("np", with_units=True)
+        cols.append(col.to("mm").m)
 
-    return point_table.view_as("pd")[columns].to_numpy() * units
+    return np.array(cols).T
 
 
 def _color_override_matches(overrides: dict, name: str):
@@ -407,7 +415,7 @@ def vis_gdml_cli() -> None:
     )
     parser.add_argument(
         "--add-points-columns",
-        default="stp/vertices:xloc,yloc,zloc",
+        default="vtx:xloc,yloc,zloc",
         help="""columns in the point file %(default)s""",
     )
 
