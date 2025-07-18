@@ -33,6 +33,7 @@ dependencies = [
     "numpy",
     "pyg4ometry",
     "dbetto",
+    "lgdo",
     "legend-pydataobj",
     "pint",
 ]
