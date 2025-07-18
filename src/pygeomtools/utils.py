@@ -3,7 +3,11 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 
+import awkward as ak
+import numpy as np
 from dbetto import AttrsDict, utils
+from lgdo.types import VectorOfVectors
+from numpy.typing import NDArray
 
 log = logging.getLogger(__name__)
 
@@ -42,3 +46,30 @@ def load_dict_from_config(
     if isinstance(m, dict):
         return AttrsDict(m)
     return default()
+
+
+def _convert_positions(
+    xloc: VectorOfVectors, yloc: VectorOfVectors, zloc: VectorOfVectors, unit: str
+) -> tuple[NDArray, NDArray]:
+    """Convert vector of vectors into a flat array of 3 vector positions."""
+    # Normalize string input to list
+    factor = np.array([1, 100, 1000])[unit == np.array(["mm", "cm", "m"])][0]
+
+    pos = []
+    sizes = []
+
+    for pos_tmp in [xloc, yloc, zloc]:
+        local_pos_tmp = ak.Array(pos_tmp) * factor
+        local_pos_flat_tmp = ak.flatten(local_pos_tmp).to_numpy()
+        pos.append(local_pos_flat_tmp)
+        sizes.append(ak.num(local_pos_tmp, axis=1))
+
+    if not ak.all(sizes[0] == sizes[1]) or not ak.all(sizes[0] == sizes[2]):
+        msg = "all position vector of vector must have the same shape"
+        raise ValueError(msg)
+
+    size = sizes[0]
+
+    # restructure the positions
+    local_positions = np.vstack(pos).T
+    return size, local_positions

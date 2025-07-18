@@ -1,11 +1,25 @@
-"""Helper functions for geometry construction."""
+"""Helper functions for geometry construction and manipulation."""
 
 from __future__ import annotations
 
 import warnings
 from collections import Counter
 
+import warnings
+from collections import Counter
+
+import logging
+
+import awkward as ak
+import numpy as np
+import pyg4ometry as pg4
+from lgdo.types import VectorOfVectors
+from numpy.typing import ArrayLike
 from pyg4ometry import geant4
+
+from .utils import _convert_positions
+
+log = logging.getLogger(__name__)
 
 
 def check_registry_sanity(v, registry: geant4.Registry) -> None:
@@ -109,3 +123,101 @@ def check_materials(registry: geant4.Registry) -> None:
                 RuntimeWarning,
                 stacklevel=1,
             )
+
+def _is_inside_cylinder(points: ArrayLike, center: tuple, height: float, radius: float):
+    """Check if 3 vectors are inside a cylinder"""
+    z = points[:, 2]
+    in_height = np.abs(z - center[2]) < height / 2.0
+    dist = np.sqrt((points[:, 0] - center[0]) ** 2 + (points[:, 1] - center[1]) ** 2)
+    in_radius = dist < radius
+
+    return in_height & in_radius
+
+
+def _get_string_list(reg: pg4.geant4.registry, string: int | list | None) -> list[int]:
+    """Get the list of strings from GDML"""
+
+    if isinstance(string, int):
+        string_list = [string]
+    elif string is not None:
+        string_list = string
+    else:
+        string_list = [
+            int(s.split("string_")[-1])
+            for s in reg.physicalVolumeDict
+            if "minishroud" in s
+        ]
+
+    return string_list
+
+
+def is_in_minishroud(
+    xloc: VectorOfVectors,
+    yloc: VectorOfVectors,
+    zloc: VectorOfVectors,
+    reg: pg4.geant4.Registry,
+    string: int | list[int] | None,
+    unit: str = "mm",
+) -> VectorOfVectors:
+    """Check which points are inside one or more NMS cylinders.
+
+    Parameters
+    ----------
+    xloc, yloc, zloc
+        Arrays of positions.
+    reg
+        The geometry registry.
+    string
+        One or more string numbers to check. Must match 'string_{N}' in volume names.
+    unit
+        the unit for the positions
+
+    Returns
+    -------
+    NDArray[bool]
+        Boolean mask where True indicates the point is inside at least one NMS.
+    """
+
+    size, points = _convert_positions(xloc, yloc, zloc, unit=unit)
+
+    inside = np.full(points.shape[0], False)
+
+    string_list = _get_string_list(reg, string)
+
+    for s in string_list:
+        found = False
+        for key, vol in reg.physicalVolumeDict.items():
+            if "minishroud" in key and f"string_{s}" in key:
+                found = True
+                center = vol.position.eval()
+                solid = vol.logicalVolume.solid
+
+                if not isinstance(solid, pg4.geant4.solid.Subtraction):
+                    msg = f"Warning: {key} is not a subtraction solid"
+                    log.warning(msg)
+                    continue
+
+                if not isinstance(solid.obj1, pg4.geant4.solid.Tubs):
+                    msg = f"Warning: {key} obj1 is not a G4Tubs"
+                    log.warning(msg)
+                    continue
+
+                outer_ms = solid.obj1
+
+                r_max = outer_ms.pRMax
+                if isinstance(r_max, pg4.gdml.Defines.Quantity):
+                    r_max = r_max.eval()
+
+                dz = outer_ms.pDz
+                if isinstance(dz, pg4.gdml.Defines.Quantity):
+                    dz = dz.eval()
+
+                inside |= _is_inside_cylinder(points, center, dz, r_max)
+                break
+
+        if not found:
+            msg = f"Minishroud for string_{s} not found in registry."
+            log.warning(msg)
+
+    return VectorOfVectors(ak.unflatten(inside, size))
+>>>>>>> add a method to check if a point is inside a minishroud
