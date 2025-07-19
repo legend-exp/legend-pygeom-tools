@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import awkward as ak
+import dbetto
+import legendhpges as hpges
 import numpy as np
 import pyg4ometry as pg4
 import pytest
-import dbetto
-from numpy import pi
 from legendtestdata import LegendTestData
+from numpy import pi
 
-from pygeomtools.geometry import _is_inside_cylinder, is_in_minishroud, is_in_borehole
 from pygeomtools.detectors import RemageDetectorInfo, write_detector_auxvals
+from pygeomtools.geometry import _is_inside_cylinder, is_in_borehole, is_in_minishroud
 
-import legendhpges as hpges
 
 def test_is_inside_cylinder():
     # inside, outside vertically, outside horizontally
@@ -20,6 +20,7 @@ def test_is_inside_cylinder():
     is_in = _is_inside_cylinder(points, (0, 0, 2), 2, 6)
 
     assert np.all(is_in == [1, 0, 0])
+
 
 @pytest.fixture(scope="session")
 def test_data_configs():
@@ -80,23 +81,21 @@ def test_make_geom(test_data_configs):
         # add a HPGe
         hpge = hpges.make_hpge(meta, name=f"V00{string}", registry=reg)
         hpge_pv = pg4.geant4.PhysicalVolume(
-                    [0, 0, 0], [x,y,0, "cm"], hpge,f"V00{string}", world_l, registry=reg
-                )
+            [0, 0, 0], [x, y, 0, "cm"], hpge, f"V00{string}", world_l, registry=reg
+        )
         hpge_pv.pygeom_active_detector = RemageDetectorInfo(
-                "germanium",
-                string,
-                meta,
-            ) 
+            "germanium",
+            string,
+            meta,
+        )
 
     # save metadata
-    write_detector_auxvals(reg)        
-    
+    write_detector_auxvals(reg)
+
     return reg
 
 
-
 def test_is_in_minishroud(test_make_geom):
-
     # place one point inside and one outside
     xloc = ak.Array([[0, 600]])
     yloc = ak.Array([[-450, 700]])
@@ -121,7 +120,6 @@ def test_is_in_minishroud(test_make_geom):
 
 
 def test_is_in_borehole(test_make_geom):
-
     # place one point inside and one outside
     xloc = ak.Array([[0, 600]])
     yloc = ak.Array([[-500, 700]])
@@ -130,17 +128,11 @@ def test_is_in_borehole(test_make_geom):
     reg = test_make_geom
 
     # first point is in borehole 1
-    is_in = is_in_borehole(
-        xloc, yloc, zloc, reg, det="V001"
-    ).view_as("ak")
+    is_in = is_in_borehole(xloc, yloc, zloc, reg, det="V001").view_as("ak")
     assert ak.all(is_in == [[True, False]])
 
-    is_in = is_in_borehole(
-        xloc, yloc, zloc, reg, det = "V*"
-    ).view_as("ak")
+    is_in = is_in_borehole(xloc, yloc, zloc, reg, det="V*").view_as("ak")
     assert ak.all(is_in == [[True, False]])
 
-    is_in = is_in_borehole(
-        xloc, yloc, zloc, reg, det = "V002"
-    ).view_as("ak")
+    is_in = is_in_borehole(xloc, yloc, zloc, reg, det="V002").view_as("ak")
     assert ak.all(is_in == [[False, False]])

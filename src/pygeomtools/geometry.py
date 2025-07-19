@@ -13,6 +13,7 @@ from numpy.typing import ArrayLike
 from pyg4ometry import geant4
 
 from pygeomtools import detectors
+
 from .utils import _convert_positions, _get_matching_volumes
 
 log = logging.getLogger(__name__)
