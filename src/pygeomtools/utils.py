@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fnmatch
 import logging
 from collections.abc import Callable
 
@@ -73,3 +74,17 @@ def _convert_positions(
     # restructure the positions
     local_positions = np.vstack(pos).T
     return size, local_positions
+
+
+def _get_matching_volumes(volume_list: list, patterns: str | list) -> list[int]:
+    """Get the list of volumes from the GDML. The string can include wildcards."""
+
+    wildcard_list = [patterns] if isinstance(patterns, str) else patterns
+
+    # find all volumes matching at least one pattern
+    matched_list = []
+    for key in volume_list:
+        for name in wildcard_list:
+            if fnmatch.fnmatch(key, name):
+                matched_list.append(key)
+    return matched_list

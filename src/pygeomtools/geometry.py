@@ -11,13 +11,16 @@ from collections import Counter
 import logging
 
 import awkward as ak
+import legendhpges
 import numpy as np
 import pyg4ometry as pg4
 from lgdo.types import VectorOfVectors
 from numpy.typing import ArrayLike
 from pyg4ometry import geant4
 
-from .utils import _convert_positions
+from pygeomtools import detectors
+
+from .utils import _convert_positions, _get_matching_volumes
 
 log = logging.getLogger(__name__)
 
@@ -134,21 +137,53 @@ def _is_inside_cylinder(points: ArrayLike, center: tuple, height: float, radius:
     return in_height & in_radius
 
 
-def _get_string_list(reg: pg4.geant4.registry, string: int | list | None) -> list[int]:
-    """Get the list of strings from GDML"""
+def is_in_borehole(
+    xloc: VectorOfVectors,
+    yloc: VectorOfVectors,
+    zloc: VectorOfVectors,
+    reg: pg4.geant4.Registry,
+    det: str | list[str] | None,
+    unit: str = "mm",
+) -> VectorOfVectors:
+    """Check which points are inside one or more borehole of the IC detectors.
 
-    if isinstance(string, int):
-        string_list = [string]
-    elif string is not None:
-        string_list = string
-    else:
-        string_list = [
-            int(s.split("string_")[-1])
-            for s in reg.physicalVolumeDict
-            if "minishroud" in s
-        ]
+    Parameters
+    ----------
+    xloc, yloc, zloc
+        Arrays of positions. Note these should be the global coordinates.
+    reg
+        The geometry registry.
+    detector
+        One or more detector names to match. Can include wildcards.
+    unit
+        the unit for the positions
 
-    return string_list
+    Returns
+    -------
+    NDArray[bool]
+        Boolean mask where True indicates the point is inside at least one borehole.
+    """
+    size, points = _convert_positions(xloc, yloc, zloc, unit=unit)
+
+    inside = np.full(points.shape[0], False)
+
+    det_list = _get_matching_volumes(list(reg.physicalVolumeDict.keys()), det)
+
+    for det_tmp in det_list:
+        # must have metadata in the registry for this to work
+        meta = detectors.get_sensvol_metadata(reg, det_tmp)
+
+        hpge = legendhpges.make_hpge(meta, registry=None)
+
+        if not isinstance(hpge, legendhpges.InvertedCoax):
+            msg = f"Only InvertedCoaxial detectors have borehole not {hpge}"
+            raise ValueError(msg)
+
+        points_tmp = points - reg.physicalVolumeDict[det_tmp].position.eval()
+
+        inside |= hpge.is_inside_borehole(points_tmp)
+
+    return VectorOfVectors(ak.unflatten(inside, size))
 
 
 def is_in_minishroud(
@@ -156,8 +191,8 @@ def is_in_minishroud(
     yloc: VectorOfVectors,
     zloc: VectorOfVectors,
     reg: pg4.geant4.Registry,
-    string: int | list[int] | None,
     unit: str = "mm",
+    minishroud_pattern: str = "minishroud_*",
 ) -> VectorOfVectors:
     """Check which points are inside one or more NMS cylinders.
 
@@ -167,57 +202,52 @@ def is_in_minishroud(
         Arrays of positions.
     reg
         The geometry registry.
-    string
-        One or more string numbers to check. Must match 'string_{N}' in volume names.
     unit
         the unit for the positions
+    minishroud_pattern
+        a pattern to search for in the volume names.
 
     Returns
     -------
-    NDArray[bool]
-        Boolean mask where True indicates the point is inside at least one NMS.
+        VectorOfVectors of booleans where `True` indicates the point is inside at least one minishroud.
+
     """
 
     size, points = _convert_positions(xloc, yloc, zloc, unit=unit)
 
     inside = np.full(points.shape[0], False)
 
-    string_list = _get_string_list(reg, string)
+    string_list = _get_matching_volumes(
+        list(reg.physicalVolumeDict.keys()), minishroud_pattern
+    )
 
     for s in string_list:
-        found = False
-        for key, vol in reg.physicalVolumeDict.items():
-            if "minishroud" in key and f"string_{s}" in key:
-                found = True
-                center = vol.position.eval()
-                solid = vol.logicalVolume.solid
+        vol = reg.physicalVolumeDict[s]
 
-                if not isinstance(solid, pg4.geant4.solid.Subtraction):
-                    msg = f"Warning: {key} is not a subtraction solid"
-                    log.warning(msg)
-                    continue
+        center = vol.position.eval()
+        solid = vol.logicalVolume.solid
 
-                if not isinstance(solid.obj1, pg4.geant4.solid.Tubs):
-                    msg = f"Warning: {key} obj1 is not a G4Tubs"
-                    log.warning(msg)
-                    continue
-
-                outer_ms = solid.obj1
-
-                r_max = outer_ms.pRMax
-                if isinstance(r_max, pg4.gdml.Defines.Quantity):
-                    r_max = r_max.eval()
-
-                dz = outer_ms.pDz
-                if isinstance(dz, pg4.gdml.Defines.Quantity):
-                    dz = dz.eval()
-
-                inside |= _is_inside_cylinder(points, center, dz, r_max)
-                break
-
-        if not found:
-            msg = f"Minishroud for string_{s} not found in registry."
+        if not isinstance(solid, pg4.geant4.solid.Subtraction):
+            msg = f"Warning: {s} is not a subtraction solid"
             log.warning(msg)
+            continue
+
+        if not isinstance(solid.obj1, pg4.geant4.solid.Tubs):
+            msg = f"Warning: {s} obj1 is not a G4Tubs"
+            log.warning(msg)
+            continue
+
+        outer_ms = solid.obj1
+
+        r_max = outer_ms.pRMax
+        if isinstance(r_max, pg4.gdml.Defines.Quantity):
+            r_max = r_max.eval()
+
+        dz = outer_ms.pDz
+        if isinstance(dz, pg4.gdml.Defines.Quantity):
+            dz = dz.eval()
+
+        inside |= _is_inside_cylinder(points, center, dz, r_max)
 
     return VectorOfVectors(ak.unflatten(inside, size))
 >>>>>>> add a method to check if a point is inside a minishroud
