@@ -44,7 +44,7 @@ def test_detector_info(tmp_path):
         "germanium", 2, {"other": "other metadata"}
     )
 
-    write_pygeom(registry, tmp_path / "geometry.gdml")
+    write_pygeom(registry, tmp_path / "geometry.gdml", ignore_duplicate_uids=True)
     detectors.generate_detector_macro(registry, tmp_path / "geometry.mac")
     expected_macro = """
 /RMG/Geometry/RegisterDetector Germanium det2 2
@@ -182,3 +182,26 @@ def test_wrong_write(tmp_path):
 
     all_top_level_aux = [(aux.auxtype, aux.auxvalue) for aux in registry.userInfo]
     assert all_top_level_aux == []
+
+
+def test_duplicate_uid():
+    from pygeomtools import RemageDetectorInfo, detectors
+
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
+    det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
+    det1 = g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], det, "det1", world_lv, registry)
+    det1.pygeom_active_detector = RemageDetectorInfo("optical", 1, {"some": "metadata"})
+    det2 = g4.PhysicalVolume([0, 0, 0], [+255, 0, 0], det, "det2", world_lv, registry)
+    det2.pygeom_active_detector = RemageDetectorInfo(
+        "germanium", 1, {"other": "other metadata"}
+    )
+
+    with pytest.raises(RuntimeError):
+        assert not detectors.check_detector_uniqueness(registry)
