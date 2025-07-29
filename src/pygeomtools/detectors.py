@@ -125,6 +125,21 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
                 )
 
 
+def check_detector_uniqueness(
+    registry: g4.Registry, ignore_duplicate_uids: set[int] | None = None
+) -> bool:
+    """Check that each sensitive detector uid is only used once."""
+    uids = [d[1].uid for d in walk_detectors(registry)]
+    uids_to_check = set(uids) - (ignore_duplicate_uids or set())
+    duplicates = [
+        uid for uid in uids_to_check if len([u for u in uids if u == uid]) > 1
+    ]
+    if duplicates != []:
+        msg = f"found duplicate detector uids {duplicates}"
+        raise RuntimeError(msg)
+    return duplicates == []
+
+
 def _get_rmg_detector_aux(
     registry: g4.Registry, *, raise_on_missing: bool = True
 ) -> Auxiliary | None:

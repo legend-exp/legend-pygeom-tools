@@ -11,9 +11,13 @@ def write_pygeom(
     reg: geant4.Registry,
     gdml_file: str | os.PathLike | None = None,
     write_vis_auxvals: bool = True,
+    *,
+    ignore_duplicate_uids: bool | set[int] = False,
 ) -> None:
     """Commit all auxiliary data to the registry and write out a GDML file."""
     detectors.write_detector_auxvals(reg)
+    if ignore_duplicate_uids is not True:
+        detectors.check_detector_uniqueness(reg, ignore_duplicate_uids or set())
     if write_vis_auxvals:
         visualization.write_color_auxvals(reg)
     geometry.check_registry_sanity(reg, reg)
