@@ -142,7 +142,7 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
             and self.vtkviewer.points is not None
         ):
             pn = self.vtkviewer.points
-            pn.SetVisibility(not ax.GetVisibility())
+            pn.SetVisibility(not pn.GetVisibility())
             self.ren.GetRenderWindow().Render()
 
         if key == "u":  # _u_p
