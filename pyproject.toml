@@ -33,7 +33,7 @@ dependencies = [
     "numpy",
     "pyg4ometry",
     "dbetto",
-    "legend-pydataobj",
+    "legend-pydataobj >=0.15.0",
     "pint",
 ]
 dynamic = [
