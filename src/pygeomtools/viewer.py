@@ -8,6 +8,7 @@ import logging
 import re
 from pathlib import Path
 
+import awkward as ak
 import numpy as np
 import pyg4ometry.geant4 as g4
 import vtk
@@ -92,6 +93,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
             scene_points["table"],
             scene_points.get("columns", ["xloc", "yloc", "zloc"]),
             scene_points.get("n_rows", None),
+            scene_points.get("evtid", None),
         )
         _add_points(
             v,
@@ -280,9 +282,16 @@ def _add_points(v, points, color=(1, 1, 0, 1), size=5) -> None:
 
 
 def _load_points(
-    lh5_file: str, point_table: str, columns: list[str], n_rows: int | None
-):
-    from lgdo import VectorOfVectors, lh5
+    lh5_file: str,
+    point_table: str,
+    columns: list[str],
+    n_rows: int | None,
+    evtid: int | None = None,
+) -> np.ndarray:
+    import pint
+    from lgdo import lh5
+
+    u = pint.get_application_registry()
 
     log.info(
         "loading table %s (with columns %s) from file %s",
@@ -295,15 +304,26 @@ def _load_points(
         extra_kwargs["n_rows"] = n_rows
     point_table = lh5.read(point_table, lh5_file, **extra_kwargs)
 
+    cols_to_load = list(columns)
+    if evtid is not None:
+        cols_to_load.append("evtid")
+    tbl = ak.Array(
+        {col: point_table[col].view_as("ak", with_units=True) for col in cols_to_load}
+    )
+
     # the points need to be in mm.
     cols = []
     for c in columns:
-        col = point_table[c]
-        if isinstance(col, VectorOfVectors):
-            col = col.flattened_data.view_as("np", with_units=True)
-        else:
-            col = col.view_as("np", with_units=True)
-        cols.append(col.to("mm").m)
+        col = tbl[c]
+        col_units = ak.parameters(col).get(
+            "units", ak.parameters(tbl).get("units", None)
+        )
+        factor = (u(col_units) / u("mm")).to("dimensionless").m
+        if evtid is not None:
+            col = col[tbl.evtid == evtid]
+        if col.ndim > 1:
+            col = ak.flatten(col)
+        cols.append(col.to_numpy() * factor)
 
     return np.array(cols).T
 
@@ -448,7 +468,7 @@ def vis_gdml_cli() -> None:
             msg = "invalid parameter for points"
             raise ValueError(msg)
 
-        points = _load_points(args.add_points, point_table, point_columns, None)
+        points = _load_points(args.add_points, point_table, point_columns, None, None)
 
     log.info("loading GDML geometry from %s", args.filename)
     registry = gdml.Reader(args.filename).getRegistry()
