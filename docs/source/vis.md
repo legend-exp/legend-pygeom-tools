@@ -100,7 +100,11 @@ points:
     n_rows: null # = all rows, or a number as a limit.
     color: [0, 1, 0, 1] # rgba tuple.
     size: 5 # marker size.
+```
 
+### advanced rendering and export options
+
+```yaml
 # add a light source and shadows to produce a nicer looking rendering.
 light:
   pos: [5000, 5000, 2000]
@@ -108,4 +112,8 @@ light:
 
 # with this setting, the exported PNG files can be larger than the rendering window.
 export_scale: 1
+# set the size of the window and the (unscaled) image.
+window_size: [300, 400]
+# directly export the image of the default view to this file name and exit the viewer.
+export_and_exit: "filename_to_export.png"
 ```

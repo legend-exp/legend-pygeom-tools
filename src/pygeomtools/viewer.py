@@ -117,7 +117,21 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     # set some defaults
     _set_camera_scene(v, scenes.get("default"))
 
-    v.view()
+    if "window_size" in scenes:
+        v.renWin.SetSize(*scenes.get("window_size"))
+
+    # if this option is set, do not use the interactor style (interactive=False below),
+    # and directly trigger an export below.
+    export_and_exit = scenes.get("export_and_exit")
+
+    v.view(interactive=export_and_exit is None)
+
+    if export_and_exit:
+        # export and immediately close.
+        _export_png(v, file_name=export_and_exit)
+        v.renWin.Finalize()
+        v.iren.TerminateApp()
+        del v.renWin
 
 
 class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
