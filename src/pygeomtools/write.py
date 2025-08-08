@@ -14,7 +14,26 @@ def write_pygeom(
     *,
     ignore_duplicate_uids: bool | set[int] = False,
 ) -> None:
-    """Commit all auxiliary data to the registry and write out a GDML file."""
+    """Commit all auxiliary data to the registry and write out a GDML file.
+
+    Parameters
+    ----------
+    reg
+        the pyg4ometry registry containing the geometry to be written.
+    gdml_file
+        GDML file to write, or ``None`` just for performing the other actions.
+    write_vis_auxvals
+        if ``False``, do not store colors in the output file.
+    ignore_duplicate_uids
+        skip the check for duplicate detector uids for all, or just some, uids.
+
+    See also
+    --------
+    .detectors.write_detector_auxvals
+    .detectors.check_detector_uniqueness
+    .visualization.write_color_auxvals
+    .geometry.check_registry_sanity
+    """
     detectors.write_detector_auxvals(reg)
     if ignore_duplicate_uids is not True:
         detectors.check_detector_uniqueness(reg, ignore_duplicate_uids or set())
