@@ -30,7 +30,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     registry
         registry instance containing the geometry to view.
     scenes
-        loaded :ref:`scene definition file <scene-file-format>`. note that the `fine_mesh`
+        loaded :ref:`scene definition file <scene-file>`. note that the `fine_mesh`
         key is ignored and has to be set before loading/constructing the geometry.
     points
         show points, additionally to the points defined in the scene config.
