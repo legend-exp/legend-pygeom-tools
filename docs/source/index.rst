@@ -9,6 +9,8 @@ can use our :doc:`extensions to the pyg4ometry API <pyg4-api>` to control the pa
 
 Detector registration and visualization attributes will be stored into the output GDML file.
 
+.. _detector-registration:
+
 Registering detectors for use with `remage`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
