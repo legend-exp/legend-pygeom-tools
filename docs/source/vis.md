@@ -1,3 +1,5 @@
+(gdml-viewer)=
+
 # GDML viewer
 
 ```text
@@ -43,6 +45,8 @@ options:
 ```{eval-rst}
 .. _scene-file-format:
 ```
+
+(scene-file)=
 
 ## scene file format
 

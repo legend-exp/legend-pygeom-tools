@@ -1,3 +1,5 @@
+(gdml-metadata)=
+
 # Metadata stored into GDML
 
 Detector metadata is written into the userinfo section of the output GDML file.
