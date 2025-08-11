@@ -450,7 +450,7 @@ def vis_gdml_cli() -> None:
     parser.add_argument(
         "--add-points-columns",
         default="vtx:xloc,yloc,zloc",
-        help="""columns in the point file %(default)s""",
+        help="""columns in the point file. default: %(default)s""",
     )
 
     parser.add_argument(

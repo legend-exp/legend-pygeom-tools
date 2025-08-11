@@ -25,7 +25,14 @@ def _color_macro_recursive(lv: g4.LogicalVolume, macro_lines: dict) -> None:
 
 
 def generate_color_macro(registry: g4.Registry, filename: str) -> None:
-    """Create a Geant4 macro file containing the defined visualization attributes."""
+    """Create a Geant4 macro file containing the defined visualization attributes.
+
+    .. note::
+        This only uses the values from :attr:`pygeom_color_rgba
+        <pyg4ometry.geant4.LogicalVolume.pygeom_color_rgba>`, and not the values already
+        written to the auxiliary structure in the GDML file. Use
+        :func:`load_color_auxvals_recursive` to load these values, if necessary.
+    """
     macro_lines = {registry.worldVolume: None}
     _color_macro_recursive(registry.worldVolume, macro_lines)
     macro_contents = "".join([m for m in macro_lines.values() if m is not None])
@@ -35,7 +42,8 @@ def generate_color_macro(registry: g4.Registry, filename: str) -> None:
 
 
 def write_color_auxvals(registry: g4.Registry) -> None:
-    """Append an auxiliary structure, storing the visualization color information."""
+    """Append an auxiliary structure to the registry, with the color information from
+    :attr:`pygeom_color_rgba <pyg4ometry.geant4.LogicalVolume.pygeom_color_rgba>`."""
     written_lvs = set()
 
     def _append_color_recursive(lv: g4.LogicalVolume) -> None:
@@ -64,6 +72,11 @@ def write_color_auxvals(registry: g4.Registry) -> None:
 
 
 def load_color_auxvals_recursive(lv: g4.LogicalVolume) -> None:
+    """Load the color values committed to the auxiliary structure for later use.
+
+    This populates :attr:`pygeom_color_rgba
+    <pyg4ometry.geant4.LogicalVolume.pygeom_color_rgba>` again.
+    """
     auxvals = list(filter(lambda aux: aux.auxtype == "rmg_color", lv.auxiliary))
     if len(auxvals) > 1:
         log.warning("more than one rmg_color for LV %s", lv.name)

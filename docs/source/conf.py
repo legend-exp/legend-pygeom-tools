@@ -20,7 +20,7 @@ extensions = [
     "sphinx_copybutton",
     "myst_parser",
 ]
-
+myst_enable_extensions = ["colon_fence"]
 source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",

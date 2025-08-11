@@ -2,6 +2,8 @@
 
 # Metadata stored into GDML
 
+## Detector metadata
+
 Detector metadata is written into the userinfo section of the output GDML file.
 
 The structure resembles a nested dictionary, stored as follows (read
@@ -16,4 +18,12 @@ The structure resembles a nested dictionary, stored as follows (read
 └─ "RMG_detector_meta" → ""
    ├─ $physvol_name → json($metadata)
    └─ [...repeat...]
+```
+
+## Coloring for visualization
+
+The color is directly attached as auxiliary data to the logical volumes:
+
+```bash
+└─ "rmg_color" → "-1" || "$r,$g,$b,$a" # components between 0 and 1
 ```
