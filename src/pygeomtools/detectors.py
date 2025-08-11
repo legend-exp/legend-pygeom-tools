@@ -119,7 +119,7 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
                 Auxiliary(pv.name, det.uid, registry, addRegistry=False)
             )
             if det.metadata is not None:
-                json_meta = json.dumps(det.metadata)
+                json_meta = json.dumps(det.metadata, sort_keys=True)
                 meta_group_aux.addSubAuxiliary(
                     Auxiliary(pv.name, json_meta, registry, addRegistry=False)
                 )
