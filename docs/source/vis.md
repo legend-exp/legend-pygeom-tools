@@ -2,6 +2,11 @@
 
 # GDML viewer
 
+The standalone GDML viewer application _legend-pygeom-vis_ is a CLI wrapper
+around {func}`pygeomtools.viewer.visualize`. It can be used to view any GDML
+file that can be read by pyg4ometry; the full set of features (coloring, ...) is
+only available with files written with _legend-pygeom-tools_.
+
 ```text
 usage: legend-pygeom-vis [-h] [--verbose] [--debug] [--fine] [--scene SCENE] [--add-points ADD_POINTS]
                          [--add-points-columns ADD_POINTS_COLUMNS]
@@ -22,33 +27,41 @@ options:
   --add-points ADD_POINTS
                         load points from LH5 file
   --add-points-columns ADD_POINTS_COLUMNS
-                        columns in the point file stp/vertices:xloc,yloc,zloc
+                        columns in the point file. default: vtx:xloc,yloc,zloc
 
 ```
 
 ## Keyboard shortcuts
 
+The GUI viewer supports some keyboard shortcuts:
+
 - `e` exit viewer
-- `a` show/hide axes
-- `u` side view
-- `t` view from top
-- `b` view from bottom
+- `a` show/hide x/y/z axes
+- `u` [_pre-defined scene_] side view
+- `t` [_pre-defined scene_] view from top
+- `b` [_pre-defined scene_] view from bottom
 - `p` toggle parallel projection
-- `s` save screenshot
-- `i` dump current camera info (focal point, up vector, position)
-- `v` toggle display of loaded points (see `--add-points`)
-- `F<n>` switch to scene n
+- `s` save screenshot. The files are named `scene.png` by default, an
+  incremented index will be added to the file name to avoid overwriting extsing
+  images.
+- `i` dump current camera info (focal point, up vector, position); in a format
+  suitable for use in a scene file.
+- `v` toggle display of loaded points (see `--add-points` and the section below)
+- `F<n>` switch to scene n, as defined in the scene file
 - `Home` switch to `default` scene
 - `+` zoom in
 - `-` zoom out
 
-```{eval-rst}
-.. _scene-file-format:
-```
-
 (scene-file)=
 
 ## scene file format
+
+The viewer provided by this package (both the CLI tool and
+{func}`pygeomtools.viewer.visualize`) can be configured by an extensive scene
+file. This file can change the appearance of the rendered geometry model in
+various ways.
+
+The basic options are shown in an annotated example file:
 
 ```yaml
 # enable finer meshing for round surfaces
@@ -94,30 +107,58 @@ color_overrides:
   V02160A: [0, 1, 0, 1]
   # the keys are interpreted as regexes (they have to match the whole volume name).
   "fibers_.*": [0, 0, 1, 1]
+```
 
-# show points (e.g. vertices, hits) as overlay over the geometry from LH5 files.
-# the units in the LH5 file will be respected.
+### for visualization of (simulated) data
+
+The viewer supports showing points (e.g. vertices, hits) as overlay over the
+geometry from LH5 files. The units in the LH5 file will be respected and will be
+scaled to show correctly over the geometry. Both the flat and the jagged remage
+output options are supported for this feature.
+
+```yaml
+# show points as overlay over the geometry from LH5 files.
 points:
   - file: test-points.lh5
-    table: stp/vertices
+    table: vtx
     columns: ["xloc", "yloc", "zloc"]
     n_rows: null # = all rows, or a number as a limit.
     color: [0, 1, 0, 1] # rgba tuple.
     size: 5 # marker size.
 ```
 
+with `evtid: 1234` the viewer also supports a crude way of visualizing a single
+event.
+
 ### advanced rendering and export options
 
+:::{note}
+
+These features are usually only required for creating high-quality renderings of
+geometries.
+
+:::
+
 ```yaml
-# add a light source and shadows to produce a nicer looking rendering.
+# add a light source and shadows to produce a more realistically looking rendering.
 light:
-  pos: [5000, 5000, 2000]
+  pos: [5000, 5000, 2000] # units: mm
   shadow: true
 
-# with this setting, the exported PNG files can be larger than the rendering window.
+# with this setting, the exported PNG files can be larger than the rendering window on
+# screen. This has to be an integer.
 export_scale: 1
-# set the size of the window and the (unscaled) image.
-window_size: [300, 400]
+# set the size of the window and the (unscaled) image. With export_scale set, the
+# exported images will have a size equals to export_scale * window_size
+window_size: [300, 400] # units: px
 # directly export the image of the default view to this file name and exit the viewer.
 export_and_exit: "filename_to_export.png"
+
+# as mentioned above, the clipper might produce unexpected shapes when closing the cuts,
+# however, closing cuts is necessary fdor well-looking renderings. close_cuts_remove
+# provides a manual way to avoid the named volumes (regexes are supported) from being
+# closed by the clipper.
+clipper:
+  - other_properties: ...
+    close_cuts_remove: ["lar", "wlsr_ttx", "minishroud_.*", "fiber_.*"]
 ```
