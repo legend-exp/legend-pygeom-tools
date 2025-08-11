@@ -12,11 +12,11 @@ import awkward as ak
 import numpy as np
 import pyg4ometry.geant4 as g4
 import vtk
+from dbetto.utils import load_dict
 from pyg4ometry import config as meshconfig
 from pyg4ometry import gdml
 from pyg4ometry import visualisation as pyg4vis
 
-from .utils import load_dict
 from .visualization import load_color_auxvals_recursive
 
 log = logging.getLogger(__name__)
@@ -109,10 +109,15 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
             v, light_pos=light.get("pos"), shadow=light.get("shadow", True)
         )
 
-    # override the interactor style.
-    v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
-    v.interactorStyle.SetDefaultRenderer(v.ren)
-    v.iren.SetInteractorStyle(v.interactorStyle)
+    # if this option is set, do not use the interactor style (interactive=False below),
+    # and directly trigger an export below.
+    export_and_exit = scenes.get("export_and_exit")
+
+    if not export_and_exit:
+        # override the interactor style.
+        v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
+        v.interactorStyle.SetDefaultRenderer(v.ren)
+        v.iren.SetInteractorStyle(v.interactorStyle)
 
     # set some defaults
     _set_camera_scene(v, scenes.get("default"))
@@ -120,9 +125,13 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     if "window_size" in scenes:
         v.renWin.SetSize(*scenes.get("window_size"))
 
-    # if this option is set, do not use the interactor style (interactive=False below),
-    # and directly trigger an export below.
-    export_and_exit = scenes.get("export_and_exit")
+    if export_and_exit:
+        # force a headless mode.
+        graphics_factory = vtk.vtkGraphicsFactory()
+        graphics_factory.SetOffScreenOnlyMode(1)
+        graphics_factory.SetUseMesaClasses(1)
+
+        v.renWin.SetOffScreenRendering(1)
 
     v.view(interactive=export_and_exit is None)
 
@@ -415,7 +424,7 @@ def _add_light_and_shadow(
         v.ren.SetPass(camera_pass)
 
 
-def vis_gdml_cli() -> None:
+def vis_gdml_cli(args: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="legend-pygeom-vis",
         description="%(prog)s command line interface",
@@ -458,7 +467,7 @@ def vis_gdml_cli() -> None:
         help="""GDML file to visualize.""",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     logging.basicConfig()
     if args.verbose:

@@ -151,7 +151,8 @@ export_scale: 1
 # set the size of the window and the (unscaled) image. With export_scale set, the
 # exported images will have a size equals to export_scale * window_size
 window_size: [300, 400] # units: px
-# directly export the image of the default view to this file name and exit the viewer.
+# directly export the image of the default view to this file name and do not start the
+# interactive viewer.
 export_and_exit: "filename_to_export.png"
 
 # as mentioned above, the clipper might produce unexpected shapes when closing the cuts,
@@ -162,3 +163,10 @@ clipper:
   - other_properties: ...
     close_cuts_remove: ["lar", "wlsr_ttx", "minishroud_.*", "fiber_.*"]
 ```
+
+:::{tip}
+
+The option `export_and_exit` can be used for offscreen rendering without an X11
+server being available.
+
+:::
