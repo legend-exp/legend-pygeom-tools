@@ -15,13 +15,10 @@ def test_vis_macro(tmp_path):
     )
     registry.setWorld(world_lv)
 
+    lar_mat = g4.MaterialPredefined("G4_lAr")
     scint = g4.solid.Box("scint", 0.5, 1, 1, registry, "m")
-    scint1 = g4.LogicalVolume(
-        scint, g4.MaterialPredefined("G4_lAr"), "scint1", registry
-    )
-    scint2 = g4.LogicalVolume(
-        scint, g4.MaterialPredefined("G4_lAr"), "scint2", registry
-    )
+    scint1 = g4.LogicalVolume(scint, lar_mat, "scint1", registry)
+    scint2 = g4.LogicalVolume(scint, lar_mat, "scint2", registry)
     g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry)
     g4.PhysicalVolume([0, 0, 0], [+255, 0, 0], scint2, "scint2", world_lv, registry)
     scint1.pygeom_color_rgba = False
@@ -69,13 +66,10 @@ def test_double_write(tmp_path):
     )
     registry.setWorld(world_lv)
 
+    lar_mat = g4.MaterialPredefined("G4_lAr")
     scint = g4.solid.Box("scint", 0.5, 1, 1, registry, "m")
-    scint1 = g4.LogicalVolume(
-        scint, g4.MaterialPredefined("G4_lAr"), "scint1", registry
-    )
-    scint2 = g4.LogicalVolume(
-        scint, g4.MaterialPredefined("G4_lAr"), "scint2", registry
-    )
+    scint1 = g4.LogicalVolume(scint, lar_mat, "scint1", registry)
+    scint2 = g4.LogicalVolume(scint, lar_mat, "scint2", registry)
     g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry)
     g4.PhysicalVolume([0, 0, 0], [+255, 0, 0], scint2, "scint2", world_lv, registry)
     scint1.pygeom_color_rgba = False

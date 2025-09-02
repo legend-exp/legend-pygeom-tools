@@ -16,13 +16,10 @@ def test_detector_info(tmp_path):
     )
     registry.setWorld(world_lv)
 
+    lar_mat = g4.MaterialPredefined("G4_lAr")
     scint = g4.solid.Box("scint", 0.5, 1, 1, registry, "m")
-    scint1 = g4.LogicalVolume(
-        scint, g4.MaterialPredefined("G4_lAr"), "scint1", registry
-    )
-    scint2 = g4.LogicalVolume(
-        scint, g4.MaterialPredefined("G4_lAr"), "scint2", registry
-    )
+    scint1 = g4.LogicalVolume(scint, lar_mat, "scint1", registry)
+    scint2 = g4.LogicalVolume(scint, lar_mat, "scint2", registry)
     scint1pv = g4.PhysicalVolume(
         [0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry
     )
