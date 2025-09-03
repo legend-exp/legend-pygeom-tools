@@ -65,6 +65,6 @@ class BaseMaterialRegistry(ABC):  # noqa: B024
         self._add_element(name="Nickel", symbol="Ni", z=28, a=58.6934)
         self._add_element(name="Copper", symbol="Cu", z=29, a=63.55)
         self._add_element(name="Indium", symbol="In", z=49, a=114.82)
-        self._add_element(name="Tin", symbol="Tn", z=50, a=118.71)
+        self._add_element(name="Tin", symbol="Sn", z=50, a=118.71)
         self._add_element(name="Tantalum", symbol="Ta", z=73, a=180.94)
         self._add_element(name="Gold", symbol="Au", z=79, a=196.967)
