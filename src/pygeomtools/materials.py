@@ -48,6 +48,7 @@ class BaseMaterialRegistry(ABC):  # noqa: B024
     def _define_elements(self) -> None:
         """Lazily define all used elements."""
         self._add_element(name="Hydrogen", symbol="H", z=1, a=1.00794)
+        self._add_element(name="Lithium", symbol="Li", z=3, a=6.941)
         self._add_element(name="Boron", symbol="B", z=5, a=10.811)
         self._add_element(name="Carbon", symbol="C", z=6, a=12.011)
         self._add_element(name="Nitrogen", symbol="N", z=7, a=14.01)
