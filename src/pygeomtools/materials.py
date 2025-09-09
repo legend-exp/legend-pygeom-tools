@@ -8,8 +8,8 @@ registration of materials.
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
 
 import pyg4ometry.geant4 as g4
 
