@@ -30,7 +30,7 @@ def check_registry_sanity(v, registry: geant4.Registry) -> None:
         raise RuntimeError(msg)
 
     # walk the tree.
-    if isinstance(v, (geant4.LogicalVolume, geant4.AssemblyVolume)):
+    if isinstance(v, geant4.LogicalVolume | geant4.AssemblyVolume):
         for dv in v.daughterVolumes:
             check_registry_sanity(dv, registry)
         check_registry_sanity(v.material, registry)
@@ -61,7 +61,7 @@ def check_registry_sanity(v, registry: geant4.Registry) -> None:
         check_registry_sanity(v.surface_property, registry)
 
     elif isinstance(
-        v, (geant4.solid.OpticalSurface, geant4.solid.SolidBase, geant4.Element)
+        v, geant4.solid.OpticalSurface | geant4.solid.SolidBase | geant4.Element
     ):
         pass
 
