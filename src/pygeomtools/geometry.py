@@ -100,7 +100,7 @@ def check_materials(registry: geant4.Registry) -> None:
             )
 
         if (
-            len(types) != 1
+            len(types) > 1
             and not isinstance(mat, geant4._Material.Element)
             and not mat.name.startswith("G4")
         ):
