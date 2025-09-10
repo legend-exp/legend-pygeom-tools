@@ -202,3 +202,41 @@ def test_duplicate_uid():
 
     with pytest.raises(RuntimeError):
         assert not detectors.check_detector_uniqueness(registry)
+
+
+def test_unknown_type():
+    from pygeomtools import RemageDetectorInfo, detectors
+
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
+    det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
+    det1 = g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], det, "det1", world_lv, registry)
+    det1.pygeom_active_detector = RemageDetectorInfo("abc", 1)
+
+    with pytest.raises(RuntimeError, match="unknown detector_type"):
+        detectors.write_detector_auxvals(registry)
+
+
+def test_wrong_uid():
+    from pygeomtools import RemageDetectorInfo, detectors
+
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
+    det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
+    det1 = g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], det, "det1", world_lv, registry)
+    det1.pygeom_active_detector = RemageDetectorInfo("optical", "x")
+
+    with pytest.raises(ValueError):
+        detectors.write_detector_auxvals(registry)
