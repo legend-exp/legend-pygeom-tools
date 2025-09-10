@@ -8,7 +8,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args, get_type_hints
 
 import pyg4ometry.geant4 as g4
 from dbetto import AttrsDict
@@ -108,6 +108,10 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
     meta_group_aux = Auxiliary(AUXKEY_DETMETA, "", registry)
 
     for key, group in group_it:
+        if key not in get_args(get_type_hints(RemageDetectorInfo)["detector_type"]):
+            msg = f"unknown detector_type {key}"
+            raise RuntimeError(msg)
+
         group_aux = Auxiliary(AUXKEY_DET, key, registry)
 
         for pv, det in group:
@@ -116,7 +120,7 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
             written_pvs.add(pv.name)
 
             group_aux.addSubAuxiliary(
-                Auxiliary(pv.name, det.uid, registry, addRegistry=False)
+                Auxiliary(pv.name, str(int(det.uid)), registry, addRegistry=False)
             )
             if det.metadata is not None:
                 json_meta = json.dumps(det.metadata, sort_keys=True)
