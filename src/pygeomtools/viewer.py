@@ -39,7 +39,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
         scenes = {}
 
     try:
-        v = pyg4vis.VtkViewerColouredNew(defaultCutters=False)
+        v = pyg4vis.VtkViewerColouredNew(defaultCutters=False, axisCubeWidget=False)
     except TypeError:
         v = pyg4vis.VtkViewerColouredNew()
     v.addLogicalVolume(registry.worldVolume)
@@ -83,6 +83,8 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
 
     v.addAxes(length=5000)
     v.axes[0].SetVisibility(False)  # hide axes by default.
+    v.addAxesWidget()
+    v.axesWidget.SetEnabled(False)  # hide axes widget by default.
 
     if points is not None:
         _add_points(v, points)
@@ -159,6 +161,9 @@ class _KeyboardInteractor(vtk.vtkInteractorStyleTrackballCamera):
         if key == "a":  # toggle _a_xes
             ax = self.vtkviewer.axes[0]
             ax.SetVisibility(not ax.GetVisibility())
+            axw = self.vtkviewer.axesWidget
+            axw.SetEnabled(not axw.GetEnabled())
+            axw.SetInteractive(not axw.GetEnabled())
             self.ren.GetRenderWindow().Render()
 
         if (
