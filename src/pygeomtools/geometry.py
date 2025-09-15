@@ -178,7 +178,7 @@ def is_in_borehole(
 
         hpge = legendhpges.make_hpge(meta, registry=None, **kwargs)
 
-        if not isinstance(hpge, legendhpges.InvertedCoax):
+        if not isinstance(hpge, legendhpges.InvertedCoax | legendhpges.V02160A | legendhpges.V07646A | legendhpges.V02162B):
             msg = f"Only InvertedCoaxial detectors have borehole not {hpge}"
             raise ValueError(msg)
 
@@ -243,7 +243,7 @@ def is_in_minishroud(
         outer_ms = solid.obj1
 
         r_max = outer_ms.pRMax
-        if isinstance(r_max, pg4.gdml.Defines.Quantity):
+        if isinstance(r_max, pg4.gdml.Defines.Expression):
             r_max = r_max.eval()
 
         dz = outer_ms.pDz
