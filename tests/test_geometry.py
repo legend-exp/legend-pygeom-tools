@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-import pyg4ometry.geant4 as g4
-import pytest
-
-from pygeomtools.geometry import check_materials
 import awkward as ak
 import dbetto
 import legendhpges as hpges
 import numpy as np
 import pyg4ometry as pg4
+import pyg4ometry.geant4 as g4
 import pytest
 from legendtestdata import LegendTestData
 from numpy import pi
 
 from pygeomtools.detectors import RemageDetectorInfo, write_detector_auxvals
-from pygeomtools.geometry import _is_inside_cylinder, is_in_borehole, is_in_minishroud
+from pygeomtools.geometry import (
+    _is_inside_cylinder,
+    check_materials,
+    is_in_borehole,
+    is_in_minishroud,
+)
 
 
 @pytest.fixture
@@ -118,7 +120,9 @@ def test_make_geom(test_data_configs):
     meta = dbetto.utils.load_dict(test_data_configs + "/V99000A.yaml")
 
     # place a few strings
-    for string, x, y in zip([1, 2, 3, 4], [0, 50, 0, -50], [-50, 0, 50, 0]):
+    for string, x, y in zip(
+        [1, 2, 3, 4], [0, 50, 0, -50], [-50, 0, 50, 0], strict=False
+    ):
         pg4.geant4.PhysicalVolume(
             [0, 0, 0],
             [x, y, 0, "cm"],

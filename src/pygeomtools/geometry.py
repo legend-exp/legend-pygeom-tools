@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-import warnings
-from collections import Counter
-
-import warnings
-from collections import Counter
-
 import logging
+import warnings
+from collections import Counter
 
 import awkward as ak
 import legendhpges
@@ -127,6 +123,7 @@ def check_materials(registry: geant4.Registry) -> None:
                 stacklevel=1,
             )
 
+
 def _is_inside_cylinder(points: ArrayLike, center: tuple, height: float, radius: float):
     """Check if 3 vectors are inside a cylinder"""
     z = points[:, 2]
@@ -144,7 +141,7 @@ def is_in_borehole(
     reg: pg4.geant4.Registry,
     det: str | list[str] | None,
     unit: str = "mm",
-    **kwargs
+    **kwargs,
 ) -> VectorOfVectors:
     """Check which points are inside one or more borehole of the IC detectors.
 
@@ -160,7 +157,7 @@ def is_in_borehole(
         the unit for the positions
     **kwargs
         Additional keywords arguments to :func:`legendhpges.make_hpge`.
-        
+
     Returns
     -------
     NDArray[bool]
@@ -178,7 +175,13 @@ def is_in_borehole(
 
         hpge = legendhpges.make_hpge(meta, registry=None, **kwargs)
 
-        if not isinstance(hpge, legendhpges.InvertedCoax | legendhpges.V02160A | legendhpges.V07646A | legendhpges.V02162B):
+        if not isinstance(
+            hpge,
+            legendhpges.InvertedCoax
+            | legendhpges.V02160A
+            | legendhpges.V07646A
+            | legendhpges.V02162B,
+        ):
             msg = f"Only InvertedCoaxial detectors have borehole not {hpge}"
             raise ValueError(msg)
 
@@ -243,14 +246,15 @@ def is_in_minishroud(
         outer_ms = solid.obj1
 
         r_max = outer_ms.pRMax
-        if isinstance(r_max, pg4.gdml.Defines.Expression):
+        dz = outer_ms.pDz
+
+        # type conversions from pyg4ometry types
+        if not isinstance(r_max, float):
             r_max = r_max.eval()
 
-        dz = outer_ms.pDz
-        if isinstance(dz, pg4.gdml.Defines.Quantity):
+        if not isinstance(dz, float):
             dz = dz.eval()
 
         inside |= _is_inside_cylinder(points, center, dz, r_max)
 
     return VectorOfVectors(ak.unflatten(inside, size))
->>>>>>> add a method to check if a point is inside a minishroud
