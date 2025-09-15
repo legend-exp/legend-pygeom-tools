@@ -3,7 +3,11 @@ from __future__ import annotations
 import pytest
 from pyg4ometry import geant4 as g4
 
-from pygeomtools.materials import BaseMaterialRegistry, cached_property
+from pygeomtools.materials import (
+    BaseMaterialRegistry,
+    LegendMaterialRegistry,
+    cached_property,
+)
 
 
 class DummyMaterials:
@@ -47,3 +51,16 @@ def test_material_registry():
     # the second access should return the same object and should not raise an error.
     ar2 = mat.get_element("Ar")
     assert ar is ar2
+
+
+def test_legend_registry():
+    registry = g4.Registry()
+    mat = LegendMaterialRegistry(registry)
+
+    # try to call all materials defined with @cached_property.
+    for name, prop in mat.__class__.__dict__.items():
+        if name.startswith("_"):
+            continue
+        assert isinstance(prop, property)
+        m = getattr(mat, name)
+        assert isinstance(m, g4.Material)
