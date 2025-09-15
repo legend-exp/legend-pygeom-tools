@@ -144,6 +144,7 @@ def is_in_borehole(
     reg: pg4.geant4.Registry,
     det: str | list[str] | None,
     unit: str = "mm",
+    **kwargs
 ) -> VectorOfVectors:
     """Check which points are inside one or more borehole of the IC detectors.
 
@@ -157,7 +158,9 @@ def is_in_borehole(
         One or more detector names to match. Can include wildcards.
     unit
         the unit for the positions
-
+    **kwargs
+        Additional keywords arguments to :func:`legendhpges.make_hpge`.
+        
     Returns
     -------
     NDArray[bool]
@@ -173,7 +176,7 @@ def is_in_borehole(
         # must have metadata in the registry for this to work
         meta = detectors.get_sensvol_metadata(reg, det_tmp)
 
-        hpge = legendhpges.make_hpge(meta, registry=None)
+        hpge = legendhpges.make_hpge(meta, registry=None, **kwargs)
 
         if not isinstance(hpge, legendhpges.InvertedCoax):
             msg = f"Only InvertedCoaxial detectors have borehole not {hpge}"
