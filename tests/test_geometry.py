@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import numpy as np
 import pyg4ometry.geant4 as g4
 import pytest
 
-from pygeomtools.geometry import check_materials
+from pygeomtools.geometry import check_materials, get_approximate_volume
 
 
 @pytest.fixture
@@ -50,3 +51,24 @@ def test_material_component_mixture(dummy_mat):
     assert len(record) == 2
     assert str(record[0].message) == "Material m with invalid massfraction sum 0.200"
     assert str(record[1].message) == "Material m with component type mixture"
+
+
+def test_approximate_volume():
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    lar_mat = g4.MaterialPredefined("G4_lAr")
+    scint = g4.solid.Box("scint", 0.5, 1, 1, registry, "m")
+    scint1 = g4.LogicalVolume(scint, lar_mat, "scint1", registry)
+    g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry)
+
+    det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
+    det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
+    g4.PhysicalVolume([0, 0, 0], [0, 0, 0], det, "det1", scint1, registry)
+
+    assert np.isclose(get_approximate_volume(det).m, 0.1 * 0.5 * 0.5)
+    assert np.isclose(get_approximate_volume(scint1).m, 0.5 - (0.1 * 0.5 * 0.5))

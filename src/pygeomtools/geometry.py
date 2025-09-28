@@ -5,7 +5,10 @@ from __future__ import annotations
 import warnings
 from collections import Counter
 
+import pint
 from pyg4ometry import geant4
+
+u = pint.get_application_registry()
 
 
 def check_registry_sanity(v, registry: geant4.Registry) -> None:
@@ -109,3 +112,20 @@ def check_materials(registry: geant4.Registry) -> None:
                 RuntimeWarning,
                 stacklevel=1,
             )
+
+
+def get_approximate_volume(lv: geant4.LogicalVolume) -> pint.Quantity:
+    """Get the cubic volume of the logical volume, subtracting the cubic volumes of the
+    daughter volumes.
+
+    .. note::
+        The result is not an exact number, but is based on the mesh calculated internally
+        by pyg4ometry. By using :func:`pyg4ometry.config.setGlobalMeshSliceAndStack`
+        before loading or creating the geometry, you can adjust how fine the mesh will be.
+    """
+    vol = lv.solid.mesh().volume()
+    for pv in lv.daughterVolumes:
+        vol -= pv.logicalVolume.solid.mesh().volume()
+    assert vol > 0
+
+    return (vol * u("mm**3")).to("m**3")
