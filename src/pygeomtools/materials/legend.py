@@ -160,7 +160,10 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _pmma.add_element_natoms(self.get_element("C"), natoms=5)
         _pmma.add_element_natoms(self.get_element("O"), natoms=2)
 
-        legendoptics.fibers.pyg4_fiber_cladding1_attach_rindex(_pmma, self.g4_registry)
+        if self.enable_optical:
+            legendoptics.fibers.pyg4_fiber_cladding1_attach_rindex(
+                _pmma, self.g4_registry
+            )
 
         return _pmma
 
