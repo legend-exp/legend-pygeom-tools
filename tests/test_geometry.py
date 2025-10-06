@@ -33,7 +33,7 @@ def test_material_wrong_sum(dummy_mat):
 
 
 def test_material_duplicate_element(dummy_mat):
-    reg, mat, e1, e2 = dummy_mat
+    reg, mat, e1, _e2 = dummy_mat
     mat.add_element_massfraction(e1, massfraction=0.2)
     mat.add_element_massfraction(e1, massfraction=0.8)
 
