@@ -5,8 +5,8 @@ from __future__ import annotations
 import warnings
 from collections import Counter
 
-import pint
 import numpy as np
+import pint
 from pyg4ometry import geant4
 
 u = pint.get_application_registry()
