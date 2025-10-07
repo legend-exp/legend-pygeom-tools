@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from collections import Counter
 
+import numpy as np
 import pint
 from pyg4ometry import geant4
 
@@ -95,7 +96,7 @@ def check_materials(registry: geant4.Registry) -> None:
                 stacklevel=1,
             )
 
-        if float(mass) not in (0.0, 1.0):
+        if not np.isclose(mass, 0.0) and not np.isclose(mass, 1.0):
             warnings.warn(
                 f"Material {mat.name} with invalid massfraction sum {mass:.3f}",
                 RuntimeWarning,
