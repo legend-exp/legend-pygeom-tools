@@ -1,6 +1,7 @@
 # legend-pygeom-tools
 
 [![PyPI](https://img.shields.io/pypi/v/legend-pygeom-tools?logo=pypi)](https://pypi.org/project/legend-pygeom-tools/)
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/legend-pygeom-tools.svg)](https://anaconda.org/conda-forge/legend-pygeom-tools)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/legend-exp/legend-pygeom-tools?logo=git)
 [![GitHub Workflow Status](https://img.shields.io/github/checks-status/legend-exp/legend-pygeom-tools/main?label=main%20branch&logo=github)](https://github.com/legend-exp/legend-pygeom-tools/actions)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
