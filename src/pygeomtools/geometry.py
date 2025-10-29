@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import warnings
 from collections import Counter
+from typing import Literal
 
 import numpy as np
 import pint
+import pyg4ometry.geant4 as g4
 from pyg4ometry import geant4
+
+from . import detectors
 
 u = pint.get_application_registry()
 
@@ -127,6 +131,61 @@ def get_approximate_volume(lv: geant4.LogicalVolume) -> pint.Quantity:
     vol = lv.solid.mesh().volume()
     for pv in lv.daughterVolumes:
         vol -= pv.logicalVolume.solid.mesh().volume()
-    assert vol > 0
+    assert vol >= 0
 
     return (vol * u("mm**3")).to("m**3")
+
+
+def print_volumes(
+    registry: g4.Registry,
+    which: Literal["logical" | "physical" | "detector"],
+    include_volume: bool = False,
+) -> None:
+    """Print details about volume registered in the registry.
+
+    Parameters
+    ==========
+    which
+        the type of volumes to print. Can be `logical`, `physical` or `detector`, to
+        print details about logical volumes, physical volumes or remage detector
+        registrations.
+    include_volume
+        if listing logical volumes, include the approximate volume as determined with
+        :func:`get_approximate_volume`.
+    """
+    import pandas as pd
+
+    lines = []
+    if which == "logical":
+        for name, lv in registry.logicalVolumeDict.items():
+            solid = lv.solid
+            solid_type = (
+                solid.__class__.__name__ if solid is not None else "UnknownSolid"
+            )
+            material = lv.material
+            mat_name = getattr(material, "name", "UnknownMaterial")
+            density = getattr(material, "density", "UnknownDensity")
+            line = {
+                "name": name,
+                "solid": solid_type,
+                "material": mat_name,
+                "density [g/cm3]": density,
+            }
+            if include_volume:
+                line["approx. volume"] = get_approximate_volume(lv)
+            lines.append(line)
+    elif which == "physical":
+        for name, pv in registry.physicalVolumeDict.items():
+            copy_nr = pv.copyNumber
+            lv = pv.logicalVolume
+            lv_name = lv if isinstance(lv, str) else getattr(lv, "name", "?")
+            lines.append({"name": name, "copy_nr": copy_nr, "logical": lv_name})
+    elif which == "detector":
+        for pv, det in detectors.walk_detectors(registry.worldVolume):
+            lines.append({"name": pv.name, "uid": det.uid, "type": det.detector_type})
+    else:
+        msg = f"unknown volume type {which}"
+        raise ValueError(msg)
+
+    table = pd.DataFrame.from_dict(lines).set_index("name").sort_index()
+    print(table.to_string())  # noqa: T201
