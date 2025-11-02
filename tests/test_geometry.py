@@ -4,7 +4,7 @@ import numpy as np
 import pyg4ometry.geant4 as g4
 import pytest
 
-from pygeomtools.geometry import check_materials, get_approximate_volume
+from pygeomtools.geometry import check_materials, get_approximate_volume, print_volumes
 
 
 @pytest.fixture
@@ -72,3 +72,6 @@ def test_approximate_volume():
 
     assert np.isclose(get_approximate_volume(det).m, 0.1 * 0.5 * 0.5)
     assert np.isclose(get_approximate_volume(scint1).m, 0.5 - (0.1 * 0.5 * 0.5))
+
+    # also test volume printing
+    print_volumes(registry)
