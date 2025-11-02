@@ -7,7 +7,7 @@ from pyg4ometry import geant4 as g4
 
 
 def test_detector_info(tmp_path):
-    from pygeomtools import RemageDetectorInfo, detectors, write_pygeom
+    from pygeomtools import RemageDetectorInfo, detectors, geometry, write_pygeom
 
     registry = g4.Registry()
     world = g4.solid.Box("world", 2, 2, 2, registry, "m")
@@ -40,6 +40,11 @@ def test_detector_info(tmp_path):
     det2.pygeom_active_detector = RemageDetectorInfo(
         "germanium", 2, {"other": "other metadata"}
     )
+
+    # also test volume printing
+    geometry.print_volumes(registry, which="logical")
+    geometry.print_volumes(registry, which="physical")
+    geometry.print_volumes(registry, which="detector")
 
     write_pygeom(registry, tmp_path / "geometry.gdml", ignore_duplicate_uids=True)
     detectors.generate_detector_macro(registry, tmp_path / "geometry.mac")
