@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import warnings
 from collections import Counter
 from typing import Literal
@@ -35,6 +36,14 @@ def check_registry_sanity(v, registry: geant4.Registry) -> None:
     """
     if not isinstance(v, geant4.Registry) and v.registry is not registry:
         msg = f"found invalid registry instance on {v}"
+        raise RuntimeError(msg)
+
+    # Geant4 has some weird behavior if the name is a valid GDML expression, so just allow
+    # a limited set of characters here.
+    if isinstance(v, geant4.LogicalVolume | geant4.PhysicalVolume) and not re.match(
+        "^[a-zA-Z0-9._-]+$", v.name
+    ):
+        msg = f"invalid name {v.name} for {type(v)}"
         raise RuntimeError(msg)
 
     # walk the tree.
