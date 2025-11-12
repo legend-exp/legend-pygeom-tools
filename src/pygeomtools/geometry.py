@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import re
 import warnings
 from collections import Counter
+from typing import Literal
 
 import awkward as ak
 import legendhpges
@@ -16,9 +18,11 @@ from pyg4ometry import geant4
 
 from pygeomtools import detectors
 
+from . import detectors
 from .utils import _convert_positions, _get_matching_volumes
 
 log = logging.getLogger(__name__)
+u = pint.get_application_registry()
 
 
 def check_registry_sanity(v, registry: geant4.Registry) -> None:
@@ -40,6 +44,14 @@ def check_registry_sanity(v, registry: geant4.Registry) -> None:
     """
     if not isinstance(v, geant4.Registry) and v.registry is not registry:
         msg = f"found invalid registry instance on {v}"
+        raise RuntimeError(msg)
+
+    # Geant4 has some weird behavior if the name is a valid GDML expression, so just allow
+    # a limited set of characters here.
+    if isinstance(v, geant4.LogicalVolume | geant4.PhysicalVolume) and not re.match(
+        "^[a-zA-Z0-9._-]+$", v.name
+    ):
+        msg = f"invalid name {v.name} for {type(v)}"
         raise RuntimeError(msg)
 
     # walk the tree.
@@ -105,7 +117,7 @@ def check_materials(registry: geant4.Registry) -> None:
                 stacklevel=1,
             )
 
-        if float(mass) not in (0.0, 1.0):
+        if not np.isclose(mass, 0.0) and not np.isclose(mass, 1.0):
             warnings.warn(
                 f"Material {mat.name} with invalid massfraction sum {mass:.3f}",
                 RuntimeWarning,
@@ -258,3 +270,75 @@ def is_in_minishroud(
         inside |= _is_inside_cylinder(points, center, dz, r_max)
 
     return VectorOfVectors(ak.unflatten(inside, size))
+
+
+def get_approximate_volume(lv: geant4.LogicalVolume) -> pint.Quantity:
+    """Get the cubic volume of the logical volume, subtracting the cubic volumes of the
+    daughter volumes.
+
+    .. note::
+        The result is not an exact number, but is based on the mesh calculated internally
+        by pyg4ometry. By using :func:`pyg4ometry.config.setGlobalMeshSliceAndStack`
+        before loading or creating the geometry, you can adjust how fine the mesh will be.
+    """
+    vol = lv.solid.mesh().volume()
+    for pv in lv.daughterVolumes:
+        vol -= pv.logicalVolume.solid.mesh().volume()
+    assert vol >= 0
+
+    return (vol * u("mm**3")).to("m**3")
+
+
+def print_volumes(
+    registry: g4.Registry,
+    which: Literal["logical" | "physical" | "detector"],
+    include_volume: bool = False,
+) -> None:
+    """Print details about volume registered in the registry.
+
+    Parameters
+    ==========
+    which
+        the type of volumes to print. Can be `logical`, `physical` or `detector`, to
+        print details about logical volumes, physical volumes or remage detector
+        registrations.
+    include_volume
+        if listing logical volumes, include the approximate volume as determined with
+        :func:`get_approximate_volume`.
+    """
+    import pandas as pd
+
+    lines = []
+    if which == "logical":
+        for name, lv in registry.logicalVolumeDict.items():
+            solid = lv.solid
+            solid_type = (
+                solid.__class__.__name__ if solid is not None else "UnknownSolid"
+            )
+            material = lv.material
+            mat_name = getattr(material, "name", "UnknownMaterial")
+            density = getattr(material, "density", "UnknownDensity")
+            line = {
+                "name": name,
+                "solid": solid_type,
+                "material": mat_name,
+                "density [g/cm3]": density,
+            }
+            if include_volume:
+                line["approx. volume"] = get_approximate_volume(lv)
+            lines.append(line)
+    elif which == "physical":
+        for name, pv in registry.physicalVolumeDict.items():
+            copy_nr = pv.copyNumber
+            lv = pv.logicalVolume
+            lv_name = lv if isinstance(lv, str) else getattr(lv, "name", "?")
+            lines.append({"name": name, "copy_nr": copy_nr, "logical": lv_name})
+    elif which == "detector":
+        for pv, det in detectors.walk_detectors(registry.worldVolume):
+            lines.append({"name": pv.name, "uid": det.uid, "type": det.detector_type})
+    else:
+        msg = f"unknown volume type {which}"
+        raise ValueError(msg)
+
+    table = pd.DataFrame.from_dict(lines).set_index("name").sort_index()
+    print(table.to_string())  # noqa: T201

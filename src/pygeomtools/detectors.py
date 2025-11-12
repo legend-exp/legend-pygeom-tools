@@ -54,14 +54,13 @@ def walk_detectors(
         if det is not None:
             assert isinstance(det, RemageDetectorInfo)
             yield pv, det
-    if isinstance(pv, g4.LogicalVolume):
-        next_v = pv
-    if isinstance(pv, g4.PhysicalVolume):
         next_v = pv.logicalVolume
+    elif isinstance(pv, g4.LogicalVolume):
+        next_v = pv
     elif isinstance(pv, g4.Registry):
         next_v = pv.worldVolume
     else:
-        msg = "invalid type encountered in walk_detectors volume tree"
+        msg = f"invalid type {type(pv)} encountered in walk_detectors volume tree"
         raise TypeError(msg)
 
     for dv in next_v.daughterVolumes:

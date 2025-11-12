@@ -14,6 +14,7 @@ from pygeomtools.detectors import RemageDetectorInfo, write_detector_auxvals
 from pygeomtools.geometry import (
     _is_inside_cylinder,
     check_materials,
+    get_approximate_volume
     is_in_borehole,
     is_in_minishroud,
 )
@@ -45,7 +46,7 @@ def test_material_wrong_sum(dummy_mat):
 
 
 def test_material_duplicate_element(dummy_mat):
-    reg, mat, e1, e2 = dummy_mat
+    reg, mat, e1, _e2 = dummy_mat
     mat.add_element_massfraction(e1, massfraction=0.2)
     mat.add_element_massfraction(e1, massfraction=0.8)
 
@@ -190,3 +191,24 @@ def test_is_in_borehole(test_make_geom):
 
     is_in = is_in_borehole(xloc, yloc, zloc, reg, det="V002").view_as("ak")
     assert ak.all(is_in == [[False, False]])
+
+
+def test_approximate_volume():
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    lar_mat = g4.MaterialPredefined("G4_lAr")
+    scint = g4.solid.Box("scint", 0.5, 1, 1, registry, "m")
+    scint1 = g4.LogicalVolume(scint, lar_mat, "scint1", registry)
+    g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry)
+
+    det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
+    det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
+    g4.PhysicalVolume([0, 0, 0], [0, 0, 0], det, "det1", scint1, registry)
+
+    assert np.isclose(get_approximate_volume(det).m, 0.1 * 0.5 * 0.5)
+    assert np.isclose(get_approximate_volume(scint1).m, 0.5 - (0.1 * 0.5 * 0.5))
