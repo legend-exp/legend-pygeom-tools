@@ -54,6 +54,7 @@ class BaseMaterialRegistry(ABC):  # noqa: B024
         self._add_element(name="argon", symbol="Ar", z=18, a=39.95)
         self._add_element(name="Chromium", symbol="Cr", z=24, a=51.9961)
         self._add_element(name="Manganese", symbol="Mn", z=25, a=54.93805)
+        self._add_element(name="Molybdenum", symbol="Mo", z=42, a=95.95)
         self._add_element(name="Iron", symbol="Fe", z=26, a=55.845)
         self._add_element(name="Cobalt", symbol="Co", z=27, a=58.9332)
         self._add_element(name="Nickel", symbol="Ni", z=28, a=58.6934)
