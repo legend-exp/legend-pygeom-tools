@@ -1,19 +1,27 @@
-"""Helper functions for geometry construction."""
+"""Helper functions for geometry construction and manipulation."""
 
 from __future__ import annotations
 
+import logging
 import re
 import warnings
 from collections import Counter
 from typing import Literal
 
+import awkward as ak
+import legendhpges
 import numpy as np
-import pint
-import pyg4ometry.geant4 as g4
+import pyg4ometry as pg4
+from lgdo.types import VectorOfVectors
+from numpy.typing import ArrayLike
 from pyg4ometry import geant4
 
-from . import detectors
+from pygeomtools import detectors
 
+from . import detectors
+from .utils import _convert_positions, _get_matching_volumes
+
+log = logging.getLogger(__name__)
 u = pint.get_application_registry()
 
 
@@ -126,6 +134,142 @@ def check_materials(registry: geant4.Registry) -> None:
                 RuntimeWarning,
                 stacklevel=1,
             )
+
+
+def _is_inside_cylinder(points: ArrayLike, center: tuple, height: float, radius: float):
+    """Check if 3 vectors are inside a cylinder"""
+    z = points[:, 2]
+    in_height = np.abs(z - center[2]) < height / 2.0
+    dist = np.sqrt((points[:, 0] - center[0]) ** 2 + (points[:, 1] - center[1]) ** 2)
+    in_radius = dist < radius
+
+    return in_height & in_radius
+
+
+def is_in_borehole(
+    xloc: VectorOfVectors,
+    yloc: VectorOfVectors,
+    zloc: VectorOfVectors,
+    reg: pg4.geant4.Registry,
+    det: str | list[str] | None,
+    unit: str = "mm",
+    **kwargs,
+) -> VectorOfVectors:
+    """Check which points are inside one or more borehole of the IC detectors.
+
+    Parameters
+    ----------
+    xloc, yloc, zloc
+        Arrays of positions. Note these should be the global coordinates.
+    reg
+        The geometry registry.
+    detector
+        One or more detector names to match. Can include wildcards.
+    unit
+        the unit for the positions
+    **kwargs
+        Additional keywords arguments to :func:`legendhpges.make_hpge`.
+
+    Returns
+    -------
+    NDArray[bool]
+        Boolean mask where True indicates the point is inside at least one borehole.
+    """
+    size, points = _convert_positions(xloc, yloc, zloc, unit=unit)
+
+    inside = np.full(points.shape[0], False)
+
+    det_list = _get_matching_volumes(list(reg.physicalVolumeDict.keys()), det)
+
+    for det_tmp in det_list:
+        # must have metadata in the registry for this to work
+        meta = detectors.get_sensvol_metadata(reg, det_tmp)
+
+        hpge = legendhpges.make_hpge(meta, registry=None, **kwargs)
+
+        if not isinstance(
+            hpge,
+            legendhpges.InvertedCoax
+            | legendhpges.V02160A
+            | legendhpges.V07646A
+            | legendhpges.V02162B,
+        ):
+            msg = f"Only InvertedCoaxial detectors have borehole not {hpge}"
+            raise ValueError(msg)
+
+        points_tmp = points - reg.physicalVolumeDict[det_tmp].position.eval()
+
+        inside |= hpge.is_inside_borehole(points_tmp)
+
+    return VectorOfVectors(ak.unflatten(inside, size))
+
+
+def is_in_minishroud(
+    xloc: VectorOfVectors,
+    yloc: VectorOfVectors,
+    zloc: VectorOfVectors,
+    reg: pg4.geant4.Registry,
+    unit: str = "mm",
+    minishroud_pattern: str = "minishroud_*",
+) -> VectorOfVectors:
+    """Check which points are inside one or more NMS cylinders.
+
+    Parameters
+    ----------
+    xloc, yloc, zloc
+        Arrays of positions.
+    reg
+        The geometry registry.
+    unit
+        the unit for the positions
+    minishroud_pattern
+        a pattern to search for in the volume names.
+
+    Returns
+    -------
+        VectorOfVectors of booleans where `True` indicates the point is inside at least one minishroud.
+
+    """
+
+    size, points = _convert_positions(xloc, yloc, zloc, unit=unit)
+
+    inside = np.full(points.shape[0], False)
+
+    string_list = _get_matching_volumes(
+        list(reg.physicalVolumeDict.keys()), minishroud_pattern
+    )
+
+    for s in string_list:
+        vol = reg.physicalVolumeDict[s]
+
+        center = vol.position.eval()
+        solid = vol.logicalVolume.solid
+
+        if not isinstance(solid, pg4.geant4.solid.Subtraction):
+            msg = f"Warning: {s} is not a subtraction solid"
+            log.warning(msg)
+            continue
+
+        if not isinstance(solid.obj1, pg4.geant4.solid.Tubs):
+            msg = f"Warning: {s} obj1 is not a G4Tubs"
+            log.warning(msg)
+            continue
+
+        outer_ms = solid.obj1
+
+        r_max = outer_ms.pRMax
+        dz = outer_ms.pDz
+
+        # type conversions from pyg4ometry types
+        if not isinstance(r_max, float):
+            r_max = r_max.eval()
+
+        if not isinstance(dz, float):
+            dz = dz.eval()
+
+        inside |= _is_inside_cylinder(points, center, dz, r_max)
+
+    return VectorOfVectors(ak.unflatten(inside, size))
 
 
 def get_approximate_volume(lv: geant4.LogicalVolume) -> pint.Quantity:
