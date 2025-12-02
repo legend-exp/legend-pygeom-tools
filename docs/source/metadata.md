@@ -12,6 +12,10 @@ The structure resembles a nested dictionary, stored as follows (read
 ```bash
 ├─ "RMG_detector" → $det_type
 │  ├─ $physvol_name → $det_uid
+│  ├─ $physvol_name → ":$det_uid"
+│  │  # the ':' is optional
+│  ├─ $physvol_name → ":$det_uid,$allow_uid_reuse,$ntuple_name"
+│  │  # $allow_uid_reuse can be "true" or "false"
 │  └─ [...repeat...]
 ├─ [...repeat...]
 │

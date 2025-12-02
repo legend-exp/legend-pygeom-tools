@@ -23,12 +23,16 @@ def test_detector_info(tmp_path):
     scint1pv = g4.PhysicalVolume(
         [0, 0, 0], [-255, 0, 0], scint1, "scint1", world_lv, registry
     )
-    scint1pv.set_pygeom_active_detector(RemageDetectorInfo("scintillator", 3))
+    scint1pv.set_pygeom_active_detector(
+        RemageDetectorInfo("scintillator", 3, None, True, "ntuple")
+    )
     scint2pv = g4.PhysicalVolume(
         [0, 0, 0], [+255, 0, 0], scint2, "scint2", world_lv, registry
     )
     assert scint2pv.get_pygeom_active_detector() is None
-    scint2pv.set_pygeom_active_detector(RemageDetectorInfo("scintillator", 3))
+    scint2pv.set_pygeom_active_detector(
+        RemageDetectorInfo("scintillator", 3, None, True, "ntuple")
+    )
     assert scint2pv.pygeom_active_detector is not None
     assert scint2pv.get_pygeom_active_detector() == scint2pv.pygeom_active_detector
 
@@ -51,20 +55,22 @@ def test_detector_info(tmp_path):
     expected_macro = """
 /RMG/Geometry/RegisterDetector Germanium det2 2
 /RMG/Geometry/RegisterDetector Optical det1 1
-/RMG/Geometry/RegisterDetector Scintillator scint1 3
-/RMG/Geometry/RegisterDetector Scintillator scint2 3
+/RMG/Geometry/RegisterDetector Scintillator scint1 3 0 true ntuple
+/RMG/Geometry/RegisterDetector Scintillator scint2 3 0 true ntuple
 """
     assert (tmp_path / "geometry.mac").read_text().strip() == expected_macro.strip()
 
     # test read again
     registry = pyg4ometry.gdml.Reader(tmp_path / "geometry.gdml").getRegistry()
 
-    all_top_level_aux = [(aux.auxtype, aux.auxvalue) for aux in registry.userInfo]
+    all_top_level_aux = [
+        (aux.auxtype, aux.auxvalue, len(aux.subaux)) for aux in registry.userInfo
+    ]
     assert all_top_level_aux == [
-        ("RMG_detector_meta", ""),
-        ("RMG_detector", "germanium"),
-        ("RMG_detector", "optical"),
-        ("RMG_detector", "scintillator"),
+        ("RMG_detector_meta", "", 2),
+        ("RMG_detector", "germanium", 1),
+        ("RMG_detector", "optical", 1),
+        ("RMG_detector", "scintillator", 2),
     ]
 
     # test that our API functions work.
@@ -78,10 +84,16 @@ def test_detector_info(tmp_path):
     assert detectors.get_sensvol_metadata(registry, "scint1") is None
     sensvols = detectors.get_all_sensvols(registry)
     assert set(sensvols.keys()) == {"det2", "det1", "scint1", "scint2"}
+
     assert sensvols["scint1"].uid == 3
+    assert sensvols["scint1"].allow_uid_reuse
+    assert sensvols["scint1"].ntuple_name == "ntuple"
 
     # test retrieval by uid.
-    assert detectors.get_sensvol_by_uid(registry, 3) == ("scint1", sensvols["scint1"])
+    assert detectors.get_sensvol_by_uid(registry, 3) == [
+        ("scint1", sensvols["scint1"]),
+        ("scint2", sensvols["scint2"]),
+    ]
     assert detectors.get_sensvol_by_uid(registry, 5) is None
 
 
@@ -207,6 +219,30 @@ def test_duplicate_uid():
 
     with pytest.raises(RuntimeError):
         assert not detectors.check_detector_uniqueness(registry)
+
+
+def test_duplicate_uid2():
+    from pygeomtools import RemageDetectorInfo, detectors
+
+    registry = g4.Registry()
+    world = g4.solid.Box("world", 2, 2, 2, registry, "m")
+    world_lv = g4.LogicalVolume(
+        world, g4.MaterialPredefined("G4_Galactic"), "world", registry
+    )
+    registry.setWorld(world_lv)
+
+    det = g4.solid.Box("det", 0.1, 0.5, 0.5, registry, "m")
+    det = g4.LogicalVolume(det, g4.MaterialPredefined("G4_Ge"), "det", registry)
+    det1 = g4.PhysicalVolume([0, 0, 0], [-255, 0, 0], det, "det1", world_lv, registry)
+    det1.pygeom_active_detector = RemageDetectorInfo(
+        "germanium", 1, allow_uid_reuse=True
+    )
+    det2 = g4.PhysicalVolume([0, 0, 0], [+255, 0, 0], det, "det2", world_lv, registry)
+    det2.pygeom_active_detector = RemageDetectorInfo(
+        "germanium", 1, allow_uid_reuse=True
+    )
+
+    assert detectors.check_detector_uniqueness(registry)
 
 
 def test_unknown_type():

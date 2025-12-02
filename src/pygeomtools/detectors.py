@@ -36,6 +36,12 @@ class RemageDetectorInfo:
     .get_sensvol_metadata
     """
 
+    allow_uid_reuse: bool = False
+    """Allow assigning multiple volumes to this detector UID."""
+
+    ntuple_name: str | None = None
+    """Optional override of the ntuple name."""
+
 
 def walk_detectors(
     pv: g4.PhysicalVolume | g4.LogicalVolume | g4.Registry,
@@ -79,8 +85,14 @@ def generate_detector_macro(registry: g4.Registry, filename: str) -> None:
     for pv, det in sensvols.items():
         if pv in macro_lines:
             continue
-        mac = f"/RMG/Geometry/RegisterDetector {det.detector_type.title()} {pv} {det.uid}\n"
-        macro_lines[pv] = mac
+        mac = (
+            f"/RMG/Geometry/RegisterDetector {det.detector_type.title()} {pv} {det.uid}"
+        )
+        if det.allow_uid_reuse:
+            mac += f" 0 {str(det.allow_uid_reuse).lower()}"
+            if det.ntuple_name is not None:
+                mac += f" {det.ntuple_name}"
+        macro_lines[pv] = mac + "\n"
 
     macro_contents = "".join(macro_lines.values())
 
@@ -118,9 +130,16 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
                 continue
             written_pvs.add(pv.name)
 
+            val = f":{int(det.uid)}"
+            if det.allow_uid_reuse or det.ntuple_name is not None:
+                val = ",".join(
+                    [val, str(det.allow_uid_reuse).lower(), det.ntuple_name or ""]
+                )
+
             group_aux.addSubAuxiliary(
-                Auxiliary(pv.name, str(int(det.uid)), registry, addRegistry=False)
+                Auxiliary(pv.name, val, registry, addRegistry=False)
             )
+
             if det.metadata is not None:
                 json_meta = json.dumps(det.metadata, sort_keys=True)
                 meta_group_aux.addSubAuxiliary(
@@ -138,11 +157,29 @@ def check_detector_uniqueness(
     ignore_duplicate_uids
         a set of uids to exclude from the uniqueness check.
     """
-    uids = [d[1].uid for d in walk_detectors(registry)]
-    uids_to_check = set(uids) - (ignore_duplicate_uids or set())
-    duplicates = [
-        uid for uid in uids_to_check if len([u for u in uids if u == uid]) > 1
-    ]
+    uids = {}
+    for _, d in walk_detectors(registry):
+        if d.uid not in uids:
+            uids[d.uid] = {"types": set(), "count": 0, "allowed_reuse": 0}
+        uids[d.uid]["types"].add(d.detector_type)
+        uids[d.uid]["count"] += int(not d.allow_uid_reuse)
+        uids[d.uid]["allowed_reuse"] += int(d.allow_uid_reuse)
+
+    ignore_duplicate_uids = ignore_duplicate_uids or set()
+    duplicates = []
+    for uid, details in uids.items():
+        if uid in ignore_duplicate_uids:
+            continue
+        if details["allowed_reuse"] == 0 and details["count"] <= 1:
+            continue
+        if (
+            details["allowed_reuse"] > 0
+            and details["count"] == 0
+            and len(details["types"]) == 1
+        ):
+            continue
+        duplicates.append(uid)
+
     if duplicates != []:
         msg = f"found duplicate detector uids {duplicates}"
         raise RuntimeError(msg)
@@ -172,7 +209,9 @@ def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
     return AttrsDict(json.loads(meta_auxs[0].auxvalue))
 
 
-def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
+def get_all_sensvols(
+    registry: g4.Registry, type_filter: str | None = None
+) -> dict[str, RemageDetectorInfo]:
     """Load all registered sensitive detectors with their metadata (from GDML)."""
     meta_aux = _get_rmg_detector_aux(registry)
     meta_auxs = {
@@ -182,12 +221,19 @@ def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
     detmapping = {}
     type_auxs = [aux for aux in registry.userInfo if aux.auxtype == AUXKEY_DET]
     for type_aux in type_auxs:
+        if type_filter is not None and type_aux.auxvalue != type_filter:
+            continue
         for det_aux in type_aux.subaux:
+            auxval_parts = det_aux.auxvalue.split(",")
             detmapping[det_aux.auxtype] = RemageDetectorInfo(
-                type_aux.auxvalue, int(det_aux.auxvalue), meta_auxs.get(det_aux.auxtype)
+                type_aux.auxvalue,
+                int(auxval_parts[0].lstrip(":")),
+                meta_auxs.get(det_aux.auxtype),
+                (auxval_parts[1] == "true") if len(auxval_parts) > 1 else False,
+                (auxval_parts[2] or None) if len(auxval_parts) > 2 else False,
             )
 
-    if set(meta_auxs.keys()) - set(detmapping.keys()) != set():
+    if type_filter is None and set(meta_auxs.keys()) - set(detmapping.keys()) != set():
         msg = "invalid GDML auxval structure (meta keys and detmapping keys differ)"
         raise RuntimeError(msg)
 
@@ -196,12 +242,18 @@ def get_all_sensvols(registry: g4.Registry) -> dict[str, RemageDetectorInfo]:
 
 def get_sensvol_by_uid(
     registry: g4.Registry, uid: int
-) -> tuple[str, RemageDetectorInfo] | None:
-    """Get the volume name and detector metadata for the detector with remage detector ID `uid`."""
+) -> tuple[str, RemageDetectorInfo] | list[tuple[str, RemageDetectorInfo]] | None:
+    """Get the volume name and detector metadata for the detector with remage detector ID `uid`.
+
+    .. note ::
+        If multiple volumes share the uid, a list of tuples is returned.
+    """
     sensvols = get_all_sensvols(registry)
-    found = next(filter(lambda s: s[1].uid == uid, sensvols.items()), None)
-    if found is None:
+    found = list(filter(lambda s: s[1].uid == uid, sensvols.items()))
+    if found == []:
         return None
+    if len(found) == 1:
+        return found[0]
     return found
 
 
