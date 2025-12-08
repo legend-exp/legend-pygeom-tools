@@ -35,6 +35,9 @@ pv.set_pygeom_active_detector(
 )
 ```
 
+More optional attributes available to control the detector registration are
+documented in {class}`pygeomtools.detectors.RemageDetectorInfo`.
+
 ### Adjusting the visualization
 
 On a logical volume instance, you can set
