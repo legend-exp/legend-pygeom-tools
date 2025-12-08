@@ -130,10 +130,10 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
                 continue
             written_pvs.add(pv.name)
 
-            val = f":{int(det.uid)}"
+            val = str(int(det.uid))
             if det.allow_uid_reuse or det.ntuple_name is not None:
                 val = ",".join(
-                    [val, str(det.allow_uid_reuse).lower(), det.ntuple_name or ""]
+                    [f":{val}", str(det.allow_uid_reuse).lower(), det.ntuple_name or ""]
                 )
 
             group_aux.addSubAuxiliary(
@@ -230,7 +230,7 @@ def get_all_sensvols(
                 int(auxval_parts[0].lstrip(":")),
                 meta_auxs.get(det_aux.auxtype),
                 (auxval_parts[1] == "true") if len(auxval_parts) > 1 else False,
-                (auxval_parts[2] or None) if len(auxval_parts) > 2 else False,
+                (auxval_parts[2] or None) if len(auxval_parts) > 2 else None,
             )
 
     if type_filter is None and set(meta_auxs.keys()) - set(detmapping.keys()) != set():
