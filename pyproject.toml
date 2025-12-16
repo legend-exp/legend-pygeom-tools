@@ -36,6 +36,7 @@ dependencies = [
     "legend-pydataobj >=0.15.0",
     "legend-pygeom-optics >=0.15",
     "pint",
+    "jsonschema",
 ]
 dynamic = [
     "version",
