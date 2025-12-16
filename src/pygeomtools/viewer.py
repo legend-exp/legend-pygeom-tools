@@ -6,9 +6,11 @@ import argparse
 import copy
 import logging
 import re
+from importlib import resources
 from pathlib import Path
 
 import awkward as ak
+import jsonschema
 import numpy as np
 import pyg4ometry.geant4 as g4
 import vtk
@@ -483,6 +485,9 @@ def vis_gdml_cli(args: list[str] | None = None) -> None:
     scene = {}
     if args.scene:
         scene = load_dict(args.scene)
+
+        schema = load_dict(resources.files("pygeomtools") / "viewer_scene_schema.yaml")
+        jsonschema.validate(instance=scene, schema=schema)
 
     if scene.get("fine_mesh", args.fine):
         meshconfig.setGlobalMeshSliceAndStack(100)

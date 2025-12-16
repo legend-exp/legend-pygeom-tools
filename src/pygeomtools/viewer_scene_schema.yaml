@@ -1,0 +1,113 @@
+"$schema": https://json-schema.org/draft/2020-12/schema
+title: legend-pygeom-vis scene file
+
+type: object
+properties:
+  color_overrides:
+    type: object
+    patternProperties:
+      ".*":
+        anyOf:
+          - const: false
+          - type: array
+            items:
+              type: number
+            minItems: 4
+            maxItems: 4
+
+  export_scale:
+    type: number
+  export_and_exit:
+    type: string
+  window_size:
+    type: array
+    items:
+      type: integer
+    minItems: 2
+    maxItems: 2
+
+  light:
+    type: object
+    properties:
+      pos:
+        "$ref": "#/$defs/vector"
+      shadow:
+        type: boolean
+    additionalProperties: false
+    required: [pos]
+
+  clipper:
+    type: array
+    items:
+      type: object
+      properties:
+        close_cuts_remove:
+          type: array
+          items:
+            type: string
+        normal:
+          "$ref": "#/$defs/vector"
+        origin:
+          "$ref": "#/$defs/vector"
+        close_cuts:
+          type: boolean
+      additionalProperties: false
+      required: [normal, origin]
+    maxItems: 1
+
+  points:
+    type: array
+    items:
+      type: object
+      properties:
+        file:
+          type: string
+        table:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+          minItems: 3
+          maxItems: 3
+        n_rows:
+          type: [integer, "null"]
+        evtid:
+          type: [integer, "null"]
+        color:
+          type: array
+          items:
+            type: number
+          minItems: 4
+          maxItems: 4
+        size:
+          type: integer
+      additionalProperties: false
+      required: [file, table]
+
+  default:
+    "$ref": "#/$defs/scene"
+  scenes:
+    type: array
+    items:
+      "$ref": "#/$defs/scene"
+
+"$defs":
+  vector:
+    type: array
+    items:
+      type: number
+    minItems: 3
+    maxItems: 3
+  scene:
+    type: object
+    properties:
+      up:
+        "$ref": "#/$defs/vector"
+      camera:
+        "$ref": "#/$defs/vector"
+      focus:
+        "$ref": "#/$defs/vector"
+      parallel:
+        type: boolean
+    additionalProperties: false
