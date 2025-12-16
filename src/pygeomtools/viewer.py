@@ -44,6 +44,20 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
         v = pyg4vis.VtkViewerColouredNew(defaultCutters=False, axisCubeWidget=False)
     except TypeError:
         v = pyg4vis.VtkViewerColouredNew()
+
+    if scenes.get("export_transparent", False):
+        v.renWin.SetAlphaBitPlanes(1)  # enable alpha channel
+        v.renWin.SetMultiSamples(0)  # disable multisampling (can break alpha)
+        v.ren.SetBackground(0, 255, 0)
+        v.ren.SetLayer(0)
+        v.ren.SetLayer(1)
+
+        if not scenes.get("export_and_exit", False):
+            log.warning(
+                "export_transparent does not work when exporting multiple times from an "
+                "interactive session; use export_and_exit."
+            )
+
     v.addLogicalVolume(registry.worldVolume)
 
     v.pygeom_scenes = scenes
@@ -260,9 +274,34 @@ def _set_camera_scene(v: pyg4vis.VtkViewerColouredNew, sc: dict) -> None:
 
 
 def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name: str = "scene.png") -> None:
-    larger = vtk.vtkRenderLargeImage()
-    larger.SetInput(v.ren)
-    larger.SetMagnification(v.pygeom_scenes.get("export_scale", 1))
+    transparent = v.pygeom_scenes.get("export_transparent", False)
+    scale = v.pygeom_scenes.get("export_scale", 1)
+
+    if not transparent:
+        w2i = vtk.vtkRenderLargeImage()
+        w2i.SetInput(v.ren)
+        w2i.SetMagnification(scale)
+    else:
+        # Set transparent background if requested
+        v.ren.SetBackgroundAlpha(0)
+        v.renWin.EraseOn()
+        v.ren.SetErase(1)
+        v.ren.Clear()
+
+        # capture as image.
+        v.renWin.OffScreenRenderingOn()
+        v.renWin.Render()
+
+        w2i = vtk.vtkWindowToImageFilter()
+        w2i.SetInput(v.renWin)
+
+        # set buffer mode.
+        w2i.SetInputBufferTypeToRGBA()
+
+        w2i.ReadFrontBufferOff()
+        orig_size = v.renWin.GetSize()
+        v.renWin.SetSize(int(orig_size[0] * scale), int(v.renWin.GetSize()[1] * scale))
+        w2i.Update()
 
     # get a non-colliding file name.
     p = Path(file_name)
@@ -277,8 +316,13 @@ def _export_png(v: pyg4vis.VtkViewerColouredNew, file_name: str = "scene.png") -
 
     png = vtk.vtkPNGWriter()
     png.SetFileName(str(p.absolute()))
-    png.SetInputConnection(larger.GetOutputPort())
+    png.SetInputConnection(w2i.GetOutputPort())
     png.Write()
+
+    if transparent:
+        # Clean up
+        v.renWin.SetSize(*orig_size)
+        v.renWin.OffScreenRenderingOff()
 
 
 def _add_points(v, points, color=(1, 1, 0, 1), size=5) -> None:
