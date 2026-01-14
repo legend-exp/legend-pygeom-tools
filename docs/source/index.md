@@ -104,4 +104,5 @@ Metadata in GDML <metadata>
 GDML viewer <vis>
 Package API reference <api/modules>
 pyg4ometry API extensions <pyg4-api>
+G4Regions in GDML files <region>
 ```
