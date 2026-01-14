@@ -11,9 +11,11 @@ from .detectors import (
     get_sensvol_by_uid,
     get_sensvol_metadata,
 )
-from .write import write_pygeom
+from .region import Region
+from .write import write_pygeom, write_pygeom_aux_only
 
 __all__ = [
+    "Region",
     "RemageDetectorInfo",
     "__version__",
     "detectors",
@@ -28,6 +30,7 @@ __all__ = [
     "viewer",  # lazy import!
     "visualization",
     "write_pygeom",
+    "write_pygeom_aux_only",
 ]
 
 

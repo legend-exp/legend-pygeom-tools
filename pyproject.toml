@@ -33,7 +33,7 @@ dependencies = [
     "numpy",
     "pyg4ometry",
     "dbetto",
-    "legend-pydataobj >=0.15.0",
+    "legend-pydataobj >=0.15.1",
     "legend-pygeom-optics >=0.15",
     "pint",
     "jsonschema",
