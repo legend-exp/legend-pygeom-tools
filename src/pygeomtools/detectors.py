@@ -240,6 +240,24 @@ def get_all_sensvols(
     return detmapping
 
 
+def get_all_senstables(
+    registry: g4.Registry, type_filter: str | None = None
+) -> dict[str, RemageDetectorInfo]:
+    """Load all registered sensitive detector tables with their metadata (from GDML)."""
+    tablemapping = {}
+    detmapping = get_all_sensvols(registry, type_filter)
+    for vol_name, det_info in detmapping.items():
+        table_name = (
+            det_info.ntuple_name if det_info.ntuple_name is not None else vol_name
+        )
+        if table_name in tablemapping and det_info != tablemapping[table_name]:
+            msg = f"detectors for table {table_name} differ in uid, type or metadata"
+            raise RuntimeError(msg)
+        tablemapping[table_name] = det_info
+
+    return tablemapping
+
+
 def get_sensvol_by_uid(
     registry: g4.Registry, uid: int
 ) -> tuple[str, RemageDetectorInfo] | list[tuple[str, RemageDetectorInfo]] | None:
@@ -255,6 +273,20 @@ def get_sensvol_by_uid(
     if len(found) == 1:
         return found[0]
     return found
+
+
+def get_senstable_by_uid(
+    registry: g4.Registry, uid: int
+) -> tuple[str, RemageDetectorInfo] | None:
+    """Get the table name and detector metadata for the detector with remage detector ID `uid`."""
+    sensvols = get_all_senstables(registry)
+    found = list(filter(lambda s: s[1].uid == uid, sensvols.items()))
+    if found == []:
+        return None
+    if len(found) == 1:
+        return found[0]
+    msg = f"more than one detector table found for uid {uid}"
+    raise ValueError(msg)
 
 
 def __set_pygeom_active_detector(self, det_info: RemageDetectorInfo | None) -> None:
