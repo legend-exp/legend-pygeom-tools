@@ -88,6 +88,13 @@ to detector uid, and can also get the attached metadata snippets:
 - {func}`pygeomtools.detectors.get_sensvol_by_uid`
 - {func}`pygeomtools.detectors.get_sensvol_metadata`
 
+Some functions also operate on the mapping of output tables to detector
+properties. This follows the default behaviour of _remage_ that combines
+multiple detectors into a signel output table if advised to do so:
+
+- {func}`pygeomtools.detectors.get_all_senstables`
+- {func}`pygeomtools.detectors.get_senstable_by_uid`
+
 ## Table of Contents
 
 ```{toctree}

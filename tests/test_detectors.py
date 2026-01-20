@@ -88,6 +88,11 @@ def test_detector_info(tmp_path):
     assert sensvols["scint1"].uid == 3
     assert sensvols["scint1"].allow_uid_reuse
     assert sensvols["scint1"].ntuple_name == "ntuple"
+    assert set(sensvols.keys()) == {"det2", "det1", "scint1", "scint2"}
+
+    tables = detectors.get_all_senstables(registry)
+    assert set(tables.keys()) == {"det2", "det1", "ntuple"}
+    assert detectors.get_senstable_by_uid(registry, 3)[0] == "ntuple"
 
     # test retrieval by uid.
     assert detectors.get_sensvol_by_uid(registry, 3) == [
