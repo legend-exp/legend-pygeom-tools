@@ -141,7 +141,7 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     _set_camera_scene(v, scenes.get("default"))
 
     if "window_size" in scenes:
-        v.renWin.SetSize(*scenes.get("window_size"))
+        v.renWin.SetSize(*scenes["window_size"])
 
     if export_and_exit:
         # force a headless mode.
@@ -260,7 +260,7 @@ def _set_camera(
     v.ren.GetRenderWindow().Render()
 
 
-def _set_camera_scene(v: pyg4vis.VtkViewerColouredNew, sc: dict) -> None:
+def _set_camera_scene(v: pyg4vis.VtkViewerColouredNew, sc: dict | None) -> None:
     if sc is None:
         _set_camera(v, up=(1, 0, 0), pos=(0, 0, +20000))
     else:
@@ -376,13 +376,13 @@ def _load_points(
     extra_kwargs = {}
     if n_rows is not None:
         extra_kwargs["n_rows"] = n_rows
-    point_table = lh5.read(point_table, lh5_file, **extra_kwargs)
+    point_tbl = lh5.read(point_table, lh5_file, **extra_kwargs)
 
     cols_to_load = list(columns)
     if evtid is not None:
         cols_to_load.append("evtid")
     tbl = ak.Array(
-        {col: point_table[col].view_as("ak", with_units=True) for col in cols_to_load}
+        {col: point_tbl[col].view_as("ak", with_units=True) for col in cols_to_load}
     )
 
     # the points need to be in mm.
@@ -518,37 +518,39 @@ def vis_gdml_cli(args: list[str] | None = None) -> None:
         help="""GDML file to visualize.""",
     )
 
-    args = parser.parse_args(args)
+    parsed = parser.parse_args(args)
 
     logging.basicConfig()
-    if args.verbose:
+    if parsed.verbose:
         logging.getLogger("pygeomtools").setLevel(logging.DEBUG)
-    if args.debug:
+    if parsed.debug:
         logging.root.setLevel(logging.DEBUG)
 
     scene = {}
-    if args.scene:
-        scene = load_dict(args.scene)
+    if parsed.scene:
+        scene = load_dict(parsed.scene)
 
-        schema = load_dict(resources.files("pygeomtools") / "viewer_scene_schema.yaml")
+        schema = load_dict(
+            str(resources.files("pygeomtools") / "viewer_scene_schema.yaml")
+        )
         jsonschema.validate(instance=scene, schema=schema)
 
-    if scene.get("fine_mesh", args.fine):
+    if scene.get("fine_mesh", parsed.fine):
         meshconfig.setGlobalMeshSliceAndStack(100)
 
     points = None
-    if args.add_points:
-        table_parts = [c.strip() for c in args.add_points_columns.split(":")]
+    if parsed.add_points:
+        table_parts = [c.strip() for c in parsed.add_points_columns.split(":")]
         point_table = table_parts[0]
         point_columns = [c.strip() for c in table_parts[1].split(",")]
         if len(table_parts) != 2 or len(point_columns) != 3:
             msg = "invalid parameter for points"
             raise ValueError(msg)
 
-        points = _load_points(args.add_points, point_table, point_columns, None, None)
+        points = _load_points(parsed.add_points, point_table, point_columns, None, None)
 
-    log.info("loading GDML geometry from %s", args.filename)
-    registry = gdml.Reader(args.filename).getRegistry()
+    log.info("loading GDML geometry from %s", parsed.filename)
+    registry = gdml.Reader(parsed.filename).getRegistry()
 
     log.info("visualizing...")
     visualize(registry, scene, points)

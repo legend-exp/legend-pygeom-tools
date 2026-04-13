@@ -12,7 +12,7 @@ from pygeomtools.materials import (
 
 class DummyMaterials:
     @cached_property
-    def x(self) -> str:
+    def x(self) -> set[str]:
         return {"test"}
 
 

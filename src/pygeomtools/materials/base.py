@@ -22,8 +22,8 @@ class BaseMaterialRegistry(ABC):  # noqa: B024
     def __init__(self, g4_registry: g4.Registry):
         self.g4_registry = g4_registry
 
-        self._elements = {}
-        self._elements_cb = {}
+        self._elements: dict[str, g4.Element] = {}
+        self._elements_cb: dict[str, Callable[[], g4.Element]] = {}
         self._define_elements()
 
     def get_element(self, symbol: str) -> g4.Element:
