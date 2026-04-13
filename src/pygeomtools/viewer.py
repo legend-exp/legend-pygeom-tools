@@ -552,3 +552,7 @@ def vis_gdml_cli(args: list[str] | None = None) -> None:
 
     log.info("visualizing...")
     visualize(registry, scene, points)
+
+
+if __name__ == "__main__":
+    vis_gdml_cli()
