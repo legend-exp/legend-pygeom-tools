@@ -33,7 +33,7 @@ def generate_color_macro(registry: g4.Registry, filename: str) -> None:
         written to the auxiliary structure in the GDML file. Use
         :func:`load_color_auxvals_recursive` to load these values, if necessary.
     """
-    macro_lines = {registry.worldVolume: None}
+    macro_lines: dict = {registry.worldVolume: None}
     _color_macro_recursive(registry.worldVolume, macro_lines)
     macro_contents = "".join([m for m in macro_lines.values() if m is not None])
 

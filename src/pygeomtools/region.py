@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import pint
 import pyg4ometry.geant4 as g4
 from pyg4ometry.gdml.Defines import Auxiliary
@@ -20,7 +18,7 @@ class Region:
 
     name: str
     """name of this Geant4 region."""
-    volumes: Sequence[str]
+    volumes: list[str]
     """volumes to add this region to."""
 
     pcut: pint.Quantity | None = None

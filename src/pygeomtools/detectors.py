@@ -8,7 +8,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import Literal, get_args, get_type_hints
+from typing import Any, Literal, get_args, get_type_hints
 
 import pyg4ometry.geant4 as g4
 from dbetto import AttrsDict
@@ -157,7 +157,7 @@ def check_detector_uniqueness(
     ignore_duplicate_uids
         a set of uids to exclude from the uniqueness check.
     """
-    uids = {}
+    uids: dict[int, dict[str, Any]] = {}
     for _, d in walk_detectors(registry):
         if d.uid not in uids:
             uids[d.uid] = {"types": set(), "count": 0, "allowed_reuse": 0}
@@ -202,6 +202,7 @@ def _get_rmg_detector_aux(
 def get_sensvol_metadata(registry: g4.Registry, name: str) -> AttrsDict | None:
     """Load metadata attached to the given sensitive volume (from GDML)."""
     meta_aux = _get_rmg_detector_aux(registry)
+    assert meta_aux is not None
     meta_auxs = [aux for aux in meta_aux.subaux if aux.auxtype == name]
     if meta_auxs == []:
         return None
@@ -214,6 +215,7 @@ def get_all_sensvols(
 ) -> dict[str, RemageDetectorInfo]:
     """Load all registered sensitive detectors with their metadata (from GDML)."""
     meta_aux = _get_rmg_detector_aux(registry)
+    assert meta_aux is not None
     meta_auxs = {
         aux.auxtype: AttrsDict(json.loads(aux.auxvalue)) for aux in meta_aux.subaux
     }
@@ -244,7 +246,7 @@ def get_all_senstables(
     registry: g4.Registry, type_filter: str | None = None
 ) -> dict[str, RemageDetectorInfo]:
     """Load all registered sensitive detector tables with their metadata (from GDML)."""
-    tablemapping = {}
+    tablemapping: dict[str, RemageDetectorInfo] = {}
     detmapping = get_all_sensvols(registry, type_filter)
     for vol_name, det_info in detmapping.items():
         table_name = (

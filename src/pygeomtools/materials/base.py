@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 import pyg4ometry.geant4 as g4
 
@@ -22,8 +23,8 @@ class BaseMaterialRegistry(ABC):  # noqa: B024
     def __init__(self, g4_registry: g4.Registry):
         self.g4_registry = g4_registry
 
-        self._elements = {}
-        self._elements_cb = {}
+        self._elements: dict[str, Any] = {}
+        self._elements_cb: dict[str, Callable[[], Any]] = {}
         self._define_elements()
 
     def get_element(self, symbol: str) -> g4.Element:
