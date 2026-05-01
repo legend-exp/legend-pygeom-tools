@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import lh5
 import pytest
-from lgdo import Array, Table, VectorOfVectors, lh5
+from lgdo import Array, Table, VectorOfVectors
 from pyg4ometry import gdml
 
 from pygeomtools import viewer

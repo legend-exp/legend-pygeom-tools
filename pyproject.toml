@@ -33,7 +33,8 @@ dependencies = [
     "numpy",
     "pyg4ometry",
     "dbetto",
-    "legend-pydataobj >=0.15.0",
+    "legend-pydataobj >=2.0.1",
+    "legend-lh5io >=0.2",
     "legend-pygeom-optics >=0.15.1",
     "pint",
     "jsonschema",
@@ -94,7 +95,6 @@ testpaths = "tests"
 
 [tool.mypy]
 python_version = "3.12"
-ignore_missing_imports = true
 
 [tool.ruff]
 src = ["src"]
