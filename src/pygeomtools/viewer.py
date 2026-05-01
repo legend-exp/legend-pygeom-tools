@@ -362,8 +362,8 @@ def _load_points(
     n_rows: int | None,
     evtid: int | None = None,
 ) -> np.ndarray:
+    import lh5
     import pint
-    from lgdo import lh5
 
     u = pint.get_application_registry()
 
