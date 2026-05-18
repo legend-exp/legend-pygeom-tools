@@ -77,17 +77,18 @@ def load_color_auxvals_recursive(lv: g4.LogicalVolume) -> None:
     This populates :attr:`pygeom_color_rgba
     <pyg4ometry.geant4.LogicalVolume.pygeom_color_rgba>` again.
     """
-    auxvals = list(filter(lambda aux: aux.auxtype == "rmg_color", lv.auxiliary))
-    if len(auxvals) > 1:
-        log.warning("more than one rmg_color for LV %s", lv.name)
-    # assert len(auxvals) <= 1
+    if not isinstance(lv, g4.AssemblyVolume):
+        auxvals = list(filter(lambda aux: aux.auxtype == "rmg_color", lv.auxiliary))
+        if len(auxvals) > 1:
+            log.warning("more than one rmg_color for LV %s", lv.name)
+        # assert len(auxvals) <= 1
 
-    if len(auxvals) > 0 and not hasattr(lv, "pygeom_color_rgba"):
-        rgba = auxvals[-1].auxvalue
-        if rgba == "-1":
-            lv.pygeom_color_rgba = False
-        else:
-            lv.pygeom_color_rgba = list(map(float, rgba.split(",")))
+        if len(auxvals) > 0 and not hasattr(lv, "pygeom_color_rgba"):
+            rgba = auxvals[-1].auxvalue
+            if rgba == "-1":
+                lv.pygeom_color_rgba = False
+            else:
+                lv.pygeom_color_rgba = list(map(float, rgba.split(",")))
 
     for pv in lv.daughterVolumes:
         if pv.type == "placement":

@@ -50,8 +50,9 @@ def check_registry_sanity(v, registry: geant4.Registry) -> None:
     if isinstance(v, geant4.LogicalVolume | geant4.AssemblyVolume):
         for dv in v.daughterVolumes:
             check_registry_sanity(dv, registry)
-        check_registry_sanity(v.material, registry)
-        check_registry_sanity(v.solid, registry)
+        if isinstance(v, geant4.LogicalVolume):
+            check_registry_sanity(v.material, registry)
+            check_registry_sanity(v.solid, registry)
 
     elif isinstance(v, geant4.PhysicalVolume):
         check_registry_sanity(v.logicalVolume, registry)
