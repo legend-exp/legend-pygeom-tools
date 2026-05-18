@@ -59,6 +59,25 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         return _liquidargon
 
     @cached_property
+    def gaseousargon(self) -> g4.Material:
+        """LEGEND gaseous argon."""
+        _gaseousargon = g4.Material(
+            name="gaseous_argon",
+            density=1.66e-3,  # g/cm3
+            number_of_components=1,
+            state="gas",
+            temperature=98,  # K
+            pressure=1.0 * 1e5,  # pascal
+            registry=self.g4_registry,
+        )
+        _gaseousargon.add_element_natoms(self.get_element("Ar"), natoms=1)
+
+        if self.enable_optical:
+            pygeomoptics.lar.pyg4_gar_attach_rindex(_gaseousargon, self.g4_registry)
+
+        return _gaseousargon
+
+    @cached_property
     def metal_steel(self) -> g4.Material:
         """Stainless steel of the GERDA cryostat."""
         _metal_steel = g4.Material(
