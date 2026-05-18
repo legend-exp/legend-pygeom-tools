@@ -35,7 +35,7 @@ dependencies = [
     "dbetto",
     "legend-pydataobj >=2.0.1",
     "legend-lh5io >=0.2",
-    "legend-pygeom-optics >=0.15.1",
+    "legend-pygeom-optics >=0.17",
     "pint",
     "jsonschema",
 ]
