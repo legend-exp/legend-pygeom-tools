@@ -27,14 +27,22 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
 
     @cached_property
     def liquidargon(self) -> g4.Material:
-        """LEGEND liquid argon."""
+        """LEGEND liquid argon.
+
+        Pressure and temperature are _not_ accurately fixed in the experiment. This code here is not a
+        reliable source for the experimental conditions, but copied from [Knoepfle2022]_.
+
+        .. [Knoepfle2022] T. Knöpfle and B. Schwingenheuer "Design and Performance of the GERDA
+           Low-Background Cryostat for Operation in Water" In: Journal of Instrumentation 17 P02038
+           (2022). https://doi.org/10.1088/1748-0221/17/02/P02038
+        """
         _liquidargon = g4.Material(
             name="liquid_argon",
             density=1.390,  # g/cm3
             number_of_components=1,
             state="liquid",
             temperature=self.lar_temperature,  # K
-            pressure=1.0 * 1e5,  # pascal
+            pressure=1.2 * 1e5,  # pascal
             registry=self.g4_registry,
         )
         _liquidargon.add_element_natoms(self.get_element("Ar"), natoms=1)
