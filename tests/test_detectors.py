@@ -45,6 +45,14 @@ def test_detector_info(tmp_path):
         "germanium", 2, {"other": "other metadata"}
     )
 
+    # the optical detector needs a valid surface defined toward it
+    osurf = g4.solid.OpticalSurface(
+        "os", "polished", "glisur", "dielectric_metal", 1.0, registry
+    )
+    osurf.addVecProperty("EFFICIENCY", [1.0, 5.0], [0.2, 0.8])
+    osurf.addVecProperty("REFLECTIVITY", [1.0, 5.0], [0.1, 0.5])
+    g4.BorderSurface("os_det1", scint1pv, det1, osurf, registry)
+
     # also test volume printing
     geometry.print_volumes(registry, which="logical")
     geometry.print_volumes(registry, which="physical")
