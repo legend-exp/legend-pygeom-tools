@@ -18,6 +18,7 @@ def _run_all_checks(
     if write_vis_auxvals:
         visualization.write_color_auxvals(reg)
     geometry.check_registry_sanity(reg, reg)
+    geometry.check_optical_surfaces(reg)
 
 
 def write_pygeom(
@@ -46,6 +47,7 @@ def write_pygeom(
     .detectors.check_detector_uniqueness
     .visualization.write_color_auxvals
     .geometry.check_registry_sanity
+    .geometry.check_optical_surfaces
     """
     _run_all_checks(reg, write_vis_auxvals, ignore_duplicate_uids)
 
