@@ -12,6 +12,7 @@
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/legend-exp/legend-pygeom-tools?logo=github)
 ![License](https://img.shields.io/github/license/legend-exp/legend-pygeom-tools)
 [![Read the Docs](https://img.shields.io/readthedocs/legend-pygeom-tools?logo=readthedocs)](https://legend-pygeom-tools.readthedocs.io)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15094869.svg)](https://doi.org/10.5281/zenodo.15094869)
 
 Python tools to handle Monte Carlo simulation geometry using
 [pyg4ometry](https://pypi.org/project/pyg4ometry/).
