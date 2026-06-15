@@ -19,11 +19,17 @@ from pygeomtools.materials import BaseMaterialRegistry, cached_property
 
 
 class LegendMaterialRegistry(BaseMaterialRegistry):
-    def __init__(self, g4_registry: g4.Registry, enable_optical: bool = True):
+    def __init__(
+        self,
+        g4_registry: g4.Registry,
+        enable_optical: bool = True,
+        enable_scintillation: bool = True,
+    ):
         super().__init__(g4_registry)
 
         self.lar_temperature = 88.8
         self.enable_optical = enable_optical
+        self.enable_scintillation = enable_scintillation
 
     @cached_property
     def liquidargon(self) -> g4.Material:
@@ -50,11 +56,12 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
                 self.g4_registry,
                 self.lar_temperature * u.K,
             )
-            pygeomoptics.lar.pyg4_lar_attach_scintillation(
-                _liquidargon,
-                self.g4_registry,
-                triplet_lifetime_method="legend200-llama",
-            )
+            if self.enable_scintillation:
+                pygeomoptics.lar.pyg4_lar_attach_scintillation(
+                    _liquidargon,
+                    self.g4_registry,
+                    triplet_lifetime_method="legend200-llama",
+                )
 
         return _liquidargon
 
@@ -87,10 +94,19 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             registry=self.g4_registry,
         )
         _metal_steel.add_element_massfraction(self.get_element("Si"), massfraction=0.01)
-        _metal_steel.add_element_massfraction(self.get_element("Cr"), massfraction=0.20)
+        _metal_steel.add_element_massfraction(
+            self.get_element("Cr"), massfraction=0.175
+        )
         _metal_steel.add_element_massfraction(self.get_element("Mn"), massfraction=0.02)
-        _metal_steel.add_element_massfraction(self.get_element("Fe"), massfraction=0.67)
-        _metal_steel.add_element_massfraction(self.get_element("Ni"), massfraction=0.10)
+        _metal_steel.add_element_massfraction(
+            self.get_element("Fe"), massfraction=0.6575
+        )
+        _metal_steel.add_element_massfraction(
+            self.get_element("Ni"), massfraction=0.115
+        )
+        _metal_steel.add_element_massfraction(
+            self.get_element("Mo"), massfraction=0.0225
+        )
 
         return _metal_steel
 
@@ -132,6 +148,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             density=8.960,
             number_of_components=1,
             registry=self.g4_registry,
+            temperature=self.lar_temperature,  # K
         )
         _metal_copper.add_element_natoms(self.get_element("Cu"), natoms=1)
 
@@ -160,6 +177,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             density=1.320,
             number_of_components=3,
             registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         _peek.add_element_natoms(self.get_element("C"), natoms=19)
         _peek.add_element_natoms(
@@ -173,7 +191,11 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
     def pmma(self) -> g4.Material:
         """PMMA for the inner fiber cladding layer."""
         _pmma = g4.Material(
-            name="pmma", density=1.2, number_of_components=3, registry=self.g4_registry
+            name="pmma",
+            density=1.2,
+            number_of_components=3,
+            registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         _pmma.add_element_natoms(self.get_element("H"), natoms=8)
         _pmma.add_element_natoms(self.get_element("C"), natoms=5)
@@ -194,6 +216,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             density=1.2,
             number_of_components=3,
             registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         _pmma_out.add_element_natoms(self.get_element("H"), natoms=8)
         _pmma_out.add_element_natoms(self.get_element("C"), natoms=5)
@@ -214,6 +237,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             density=1.05,
             number_of_components=2,
             registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         _ps_fibers.add_element_natoms(self.get_element("H"), natoms=8)
         _ps_fibers.add_element_natoms(self.get_element("C"), natoms=8)
@@ -226,9 +250,11 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
                 _ps_fibers, self.g4_registry
             )
             pygeomoptics.fibers.pyg4_fiber_core_attach_wls(_ps_fibers, self.g4_registry)
-            pygeomoptics.fibers.pyg4_fiber_core_attach_scintillation(
-                _ps_fibers, self.g4_registry
-            )
+
+            if self.enable_scintillation:
+                pygeomoptics.fibers.pyg4_fiber_core_attach_scintillation(
+                    _ps_fibers, self.g4_registry
+                )
 
         return _ps_fibers
 
@@ -239,6 +265,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             number_of_components=2,
             state="solid",
             registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         t.add_element_natoms(self.get_element("H"), natoms=22)
         t.add_element_natoms(self.get_element("C"), natoms=28)
@@ -325,6 +352,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             density=1.3,
             number_of_components=3,
             registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         _pen.add_element_natoms(self.get_element("C"), natoms=14)
         _pen.add_element_natoms(self.get_element("H"), natoms=10)
@@ -334,7 +362,8 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             pygeomoptics.pen.pyg4_pen_attach_rindex(_pen, self.g4_registry)
             pygeomoptics.pen.pyg4_pen_attach_attenuation(_pen, self.g4_registry)
             pygeomoptics.pen.pyg4_pen_attach_wls(_pen, self.g4_registry)
-            pygeomoptics.pen.pyg4_pen_attach_scintillation(_pen, self.g4_registry)
+            if self.enable_scintillation:
+                pygeomoptics.pen.pyg4_pen_attach_scintillation(_pen, self.g4_registry)
 
         return _pen
 
@@ -381,10 +410,13 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             pygeomoptics.vm2000.pyg4_vm2000_attach_rindex(_vm2000, self.g4_registry)
             pygeomoptics.vm2000.pyg4_vm2000_attach_wls(_vm2000, self.g4_registry)
             # VM2000 seem to consist of PMMA and PEN layers https://iopscience.iop.org/article/10.1088/1748-0221/12/06/P06017/pdf
-            pygeomoptics.pen.pyg4_pen_attach_scintillation(_vm2000, self.g4_registry)
-            pygeomoptics.vm2000.pyg4_vm2000_attach_particle_scintillationyields(
-                _vm2000, self.g4_registry
-            )
+            if self.enable_scintillation:
+                pygeomoptics.pen.pyg4_pen_attach_scintillation(
+                    _vm2000, self.g4_registry
+                )
+                pygeomoptics.vm2000.pyg4_vm2000_attach_particle_scintillationyields(
+                    _vm2000, self.g4_registry
+                )
 
         return _vm2000
 
@@ -431,6 +463,24 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         return _pmt_air
 
     @cached_property
+    def air(self) -> g4.Material:
+        """Air material with refractive index."""
+        _air = g4.Material(
+            name="air",
+            density=1.225e-3,
+            number_of_components=2,
+            registry=self.g4_registry,
+        )
+        _air.add_element_massfraction(self.get_element("N"), massfraction=0.757)
+        _air.add_element_massfraction(self.get_element("O"), massfraction=0.23)
+        _air.add_element_massfraction(self.get_element("Ar"), massfraction=0.013)
+
+        if self.enable_optical:
+            pygeomoptics.pmts.pyg4_pmt_attach_air_rindex(_air, self.g4_registry)
+
+        return _air
+
+    @cached_property
     def borosilicate(self) -> g4.Material:
         """Material for the borosilicate glass of the PMT."""
         _borosilicate = g4.MaterialCompound(
@@ -464,6 +514,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             density=1.27,
             number_of_components=4,
             registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         _ultem.add_element_natoms(self.get_element("C"), natoms=37)
         _ultem.add_element_natoms(self.get_element("H"), natoms=24)
@@ -484,6 +535,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             density=2.2,
             number_of_components=2,
             registry=self.g4_registry,
+            temperature=self.lar_temperature,
         )
         _silica.add_element_natoms(self.get_element("Si"), natoms=1)
         _silica.add_element_natoms(self.get_element("O"), natoms=2)
