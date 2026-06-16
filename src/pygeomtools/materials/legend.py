@@ -31,6 +31,10 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         self.enable_optical = enable_optical
         self.enable_scintillation = enable_scintillation
 
+        if not self.enable_optical and self.enable_scintillation:
+            msg = "Scintillation cannot be enabled if optical properties are disabled."
+            raise ValueError(msg)
+
     @cached_property
     def liquidargon(self) -> g4.Material:
         """LEGEND liquid argon."""
@@ -85,30 +89,100 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         return _gaseousargon
 
     @cached_property
-    def metal_steel(self) -> g4.Material:
-        """Stainless steel of the GERDA cryostat."""
-        _metal_steel = g4.Material(
-            name="metal_steel",
-            density=7.9,
-            number_of_components=5,
+    def metal_steel_316Ti(self) -> g4.Material:
+        """Stainless steel of the GERDA cryostat (1.4571 (DIN), 316Ti (AISI)) according to 10.1088/1748-0221/17/02/P02038."""
+
+        # value staken from https://www.theworldmaterial.com/stainless-steel-chemical-composition/
+        elemental_composition = {
+            "C": 0.08,
+            "Mn": 2.0,
+            "P": 0.045,
+            "S": 0.03,
+            "Si": 1.0,
+            "Cr": 17.0,
+            "Ni": 12.0,
+            "Mo": 2.5,
+            "N": 0.1,
+            "Ti": 0.7,
+            "Fe": 64.545,
+        }
+
+        _metal_steel_316Ti = g4.Material(
+            name="metal_steel_316Ti",
+            density=8.0,
+            number_of_components=len(elemental_composition),
             registry=self.g4_registry,
         )
-        _metal_steel.add_element_massfraction(self.get_element("Si"), massfraction=0.01)
-        _metal_steel.add_element_massfraction(
-            self.get_element("Cr"), massfraction=0.175
+
+        for element, massfraction in elemental_composition.items():
+            _metal_steel_316Ti.add_element_massfraction(
+                self.get_element(element), massfraction=massfraction / 100
+            )
+        return _metal_steel_316Ti
+
+    @cached_property
+    def metal_steel_304L(self) -> g4.Material:
+        """Stainless steel of the L1000 water tank (1.4307 (DIN), 304L (AISI)) according to TDR."""
+
+        # value staken from https://www.theworldmaterial.com/stainless-steel-chemical-composition/
+        elemental_composition = {
+            "C": 0.08,
+            "Mn": 2.0,
+            "P": 0.045,
+            "S": 0.03,
+            "Si": 1.0,
+            "Cr": 19.0,
+            "Ni": 10.0,
+            "Fe": 67.845,
+        }
+
+        _metal_steel_304L = g4.Material(
+            name="metal_steel_304L",
+            density=8.03,
+            number_of_components=len(elemental_composition),
+            registry=self.g4_registry,
         )
-        _metal_steel.add_element_massfraction(self.get_element("Mn"), massfraction=0.02)
-        _metal_steel.add_element_massfraction(
-            self.get_element("Fe"), massfraction=0.6575
-        )
-        _metal_steel.add_element_massfraction(
-            self.get_element("Ni"), massfraction=0.115
-        )
-        _metal_steel.add_element_massfraction(
-            self.get_element("Mo"), massfraction=0.0225
+        for element, massfraction in elemental_composition.items():
+            _metal_steel_304L.add_element_massfraction(
+                self.get_element(element), massfraction=massfraction / 100
+            )
+
+        return _metal_steel_304L
+
+    @cached_property
+    def metal_steel_316L(self) -> g4.Material:
+        """Stainless steel of the L1000 cryostat (1.4404 (DIN), 316L (AISI)) according to TDR."""
+        # value staken from https://www.machinemfg.com/chemical-composition-of-316l-stainless-steel/
+        elemental_composition = {
+            "C": 0.03,
+            "Mn": 2.0,
+            "P": 0.045,
+            "S": 0.03,
+            "Si": 1.0,
+            "Cr": 17.0,
+            "Ni": 11.5,
+            "Mo": 2.5,
+            "N": 0.01,
+            "Fe": 65.885,
+        }
+
+        _metal_steel_316L = g4.Material(
+            name="metal_steel_316L",
+            density=8.0,
+            number_of_components=len(elemental_composition),
+            registry=self.g4_registry,
         )
 
-        return _metal_steel
+        for element, massfraction in elemental_composition.items():
+            _metal_steel_316L.add_element_massfraction(
+                self.get_element(element), massfraction=massfraction / 100
+            )
+        return _metal_steel_316L
+
+    @cached_property
+    def metal_steel(self) -> g4.Material:
+        """Fallback stainless steel material, based on GERDA croystat steel"""
+        return self.metal_steel_316Ti
 
     @cached_property
     def metal_silicon(self) -> g4.Material:
@@ -410,13 +484,10 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             pygeomoptics.vm2000.pyg4_vm2000_attach_rindex(_vm2000, self.g4_registry)
             pygeomoptics.vm2000.pyg4_vm2000_attach_wls(_vm2000, self.g4_registry)
             # VM2000 seem to consist of PMMA and PEN layers https://iopscience.iop.org/article/10.1088/1748-0221/12/06/P06017/pdf
-            if self.enable_scintillation:
-                pygeomoptics.pen.pyg4_pen_attach_scintillation(
-                    _vm2000, self.g4_registry
-                )
-                pygeomoptics.vm2000.pyg4_vm2000_attach_particle_scintillationyields(
-                    _vm2000, self.g4_registry
-                )
+            pygeomoptics.pen.pyg4_pen_attach_scintillation(_vm2000, self.g4_registry)
+            pygeomoptics.vm2000.pyg4_vm2000_attach_particle_scintillationyields(
+                _vm2000, self.g4_registry
+            )
 
         return _vm2000
 
