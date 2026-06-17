@@ -18,28 +18,55 @@ import pygeomoptics.water
 from pygeomtools.materials import BaseMaterialRegistry, cached_property
 
 
+class _AllMaterials:
+    """Sentinel meaning all materials have optical properties enabled.
+
+    Using this as ``enable_optical`` avoids enumerating material names at
+    construction time (cached properties are not yet instantiated then).
+    """
+
+    def __contains__(self, _: object) -> bool:
+        return True
+
+    def __bool__(self) -> bool:
+        return True
+
+
 class LegendMaterialRegistry(BaseMaterialRegistry):
     def __init__(
-        self,
-        g4_registry: g4.Registry,
-        enable_optical: bool = True,
-        enable_scintillation: bool = True,
+        self, g4_registry: g4.Registry, enable_optical: bool | list[str] = True
     ):
+        """Create the LEGEND material registry.
+
+        Parameters
+        ----------
+        g4_registry:
+            The Geant4 registry to register materials in.
+        enable_optical:
+            ``True`` (default) enables optical properties for all materials.
+            ``False`` disables them everywhere.
+            A ``list[str]`` enables optical properties only for the named
+            materials (use the Python property name, e.g. ``"liquidargon"``).
+            Note: ``"Water"`` is the Geant4 name for the ``water`` property —
+            pass ``"water"`` in the list.
+        """
+
         super().__init__(g4_registry)
 
         self.lar_temperature = 88.8
-        self.enable_optical = enable_optical
-        self.enable_scintillation = enable_scintillation
 
-        if not self.enable_optical and self.enable_scintillation:
-            msg = "Scintillation cannot be enabled if optical properties are disabled."
-            raise ValueError(msg)
+        if isinstance(enable_optical, bool):
+            self.enable_optical: _AllMaterials | set[str] = (
+                _AllMaterials() if enable_optical else set()
+            )
+        else:
+            self.enable_optical = set(enable_optical)
 
     @cached_property
     def liquidargon(self) -> g4.Material:
         """LEGEND liquid argon."""
         _liquidargon = g4.Material(
-            name="liquid_argon",
+            name="liquidargon",
             density=1.390,  # g/cm3
             number_of_components=1,
             state="liquid",
@@ -50,7 +77,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _liquidargon.add_element_natoms(self.get_element("Ar"), natoms=1)
 
         u = pint.get_application_registry().get()
-        if self.enable_optical:
+        if _liquidargon.name in self.enable_optical:
             pygeomoptics.lar.pyg4_lar_attach_rindex(
                 _liquidargon,
                 self.g4_registry,
@@ -60,12 +87,11 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
                 self.g4_registry,
                 self.lar_temperature * u.K,
             )
-            if self.enable_scintillation:
-                pygeomoptics.lar.pyg4_lar_attach_scintillation(
-                    _liquidargon,
-                    self.g4_registry,
-                    triplet_lifetime_method="legend200-llama",
-                )
+            pygeomoptics.lar.pyg4_lar_attach_scintillation(
+                _liquidargon,
+                self.g4_registry,
+                triplet_lifetime_method="legend200-llama",
+            )
 
         return _liquidargon
 
@@ -73,7 +99,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
     def gaseousargon(self) -> g4.Material:
         """LEGEND gaseous argon."""
         _gaseousargon = g4.Material(
-            name="gaseous_argon",
+            name="gaseousargon",
             density=1.66e-3,  # g/cm3
             number_of_components=1,
             state="gas",
@@ -83,7 +109,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         )
         _gaseousargon.add_element_natoms(self.get_element("Ar"), natoms=1)
 
-        if self.enable_optical:
+        if _gaseousargon.name in self.enable_optical:
             pygeomoptics.lar.pyg4_gar_attach_rindex(_gaseousargon, self.g4_registry)
 
         return _gaseousargon
@@ -275,7 +301,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _pmma.add_element_natoms(self.get_element("C"), natoms=5)
         _pmma.add_element_natoms(self.get_element("O"), natoms=2)
 
-        if self.enable_optical:
+        if _pmma.name in self.enable_optical:
             pygeomoptics.fibers.pyg4_fiber_cladding1_attach_rindex(
                 _pmma, self.g4_registry
             )
@@ -286,7 +312,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
     def pmma_out(self) -> g4.Material:
         """PMMA for the outer fiber cladding layer."""
         _pmma_out = g4.Material(
-            name="pmma_cl2",
+            name="pmma_out",
             density=1.2,
             number_of_components=3,
             registry=self.g4_registry,
@@ -296,7 +322,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _pmma_out.add_element_natoms(self.get_element("C"), natoms=5)
         _pmma_out.add_element_natoms(self.get_element("O"), natoms=2)
 
-        if self.enable_optical:
+        if _pmma_out.name in self.enable_optical:
             pygeomoptics.fibers.pyg4_fiber_cladding2_attach_rindex(
                 _pmma_out, self.g4_registry
             )
@@ -316,7 +342,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _ps_fibers.add_element_natoms(self.get_element("H"), natoms=8)
         _ps_fibers.add_element_natoms(self.get_element("C"), natoms=8)
 
-        if self.enable_optical:
+        if _ps_fibers.name in self.enable_optical:
             pygeomoptics.fibers.pyg4_fiber_core_attach_rindex(
                 _ps_fibers, self.g4_registry
             )
@@ -325,10 +351,9 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             )
             pygeomoptics.fibers.pyg4_fiber_core_attach_wls(_ps_fibers, self.g4_registry)
 
-            if self.enable_scintillation:
-                pygeomoptics.fibers.pyg4_fiber_core_attach_scintillation(
-                    _ps_fibers, self.g4_registry
-                )
+            pygeomoptics.fibers.pyg4_fiber_core_attach_scintillation(
+                _ps_fibers, self.g4_registry
+            )
 
         return _ps_fibers
 
@@ -344,7 +369,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         t.add_element_natoms(self.get_element("H"), natoms=22)
         t.add_element_natoms(self.get_element("C"), natoms=28)
 
-        if self.enable_optical:
+        if t.name in self.enable_optical:
             pygeomoptics.tpb.pyg4_tpb_attach_rindex(t, self.g4_registry)
             pygeomoptics.tpb.pyg4_tpb_attach_wls(t, self.g4_registry, **wls_opts)
 
@@ -372,7 +397,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             emission_spectrum="polystyrene_matrix",
         )
 
-        if self.enable_optical:
+        if _tpb_on_nylon.name in self.enable_optical:
             # add absorption length from nylon.
             pygeomoptics.nylon.pyg4_nylon_attach_absorption(
                 _tpb_on_nylon, self.g4_registry
@@ -412,7 +437,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _nylon.add_element_natoms(self.get_element("O"), natoms=3)
         _nylon.add_element_natoms(self.get_element("C"), natoms=13)
 
-        if self.enable_optical:
+        if _nylon.name in self.enable_optical:
             pygeomoptics.nylon.pyg4_nylon_attach_rindex(_nylon, self.g4_registry)
             pygeomoptics.nylon.pyg4_nylon_attach_absorption(_nylon, self.g4_registry)
 
@@ -432,12 +457,11 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _pen.add_element_natoms(self.get_element("H"), natoms=10)
         _pen.add_element_natoms(self.get_element("O"), natoms=4)
 
-        if self.enable_optical:
+        if _pen.name in self.enable_optical:
             pygeomoptics.pen.pyg4_pen_attach_rindex(_pen, self.g4_registry)
             pygeomoptics.pen.pyg4_pen_attach_attenuation(_pen, self.g4_registry)
             pygeomoptics.pen.pyg4_pen_attach_wls(_pen, self.g4_registry)
-            if self.enable_scintillation:
-                pygeomoptics.pen.pyg4_pen_attach_scintillation(_pen, self.g4_registry)
+            pygeomoptics.pen.pyg4_pen_attach_scintillation(_pen, self.g4_registry)
 
         return _pen
 
@@ -455,7 +479,9 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _water.add_element_natoms(self.get_element("H"), natoms=2)
         _water.add_element_natoms(self.get_element("O"), natoms=1)
 
-        if self.enable_optical:
+        if (
+            "water" in self.enable_optical
+        ):  # G4 name is "Water" (Geant4 Rayleigh), property name is "water"
             pygeomoptics.water.pyg4_water_attach_rindex(_water, self.g4_registry)
             pygeomoptics.water.pyg4_water_attach_absorption(_water, self.g4_registry)
 
@@ -477,7 +503,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _vm2000.add_element_natoms(self.get_element("O"), natoms=3)
         _vm2000.add_element_natoms(self.get_element("C"), natoms=13)
 
-        if self.enable_optical:
+        if _vm2000.name in self.enable_optical:
             pygeomoptics.vm2000.pyg4_vm2000_attach_absorption_length(
                 _vm2000, self.g4_registry
             )
@@ -504,7 +530,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _acryl.add_element_natoms(self.get_element("H"), natoms=2)
         _acryl.add_element_natoms(self.get_element("C"), natoms=1)
 
-        if self.enable_optical:
+        if _acryl.name in self.enable_optical:
             pygeomoptics.pmts.pyg4_pmt_attach_acryl_rindex(_acryl, self.g4_registry)
             pygeomoptics.pmts.pyg4_pmt_attach_acryl_absorption_length(
                 _acryl, self.g4_registry
@@ -516,7 +542,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
     def pmt_air(self) -> g4.Material:
         """Material for the air in between Acryl cap and PMT."""
         _pmt_air = g4.MaterialCompound(
-            name="PMT_air",
+            name="pmt_air",
             density=0.001225,
             number_of_components=2,
             registry=self.g4_registry,
@@ -525,7 +551,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _pmt_air.add_element_natoms(self.get_element("N"), natoms=3)
         _pmt_air.add_element_natoms(self.get_element("O"), natoms=1)
 
-        if self.enable_optical:
+        if _pmt_air.name in self.enable_optical:
             pygeomoptics.pmts.pyg4_pmt_attach_air_rindex(_pmt_air, self.g4_registry)
             pygeomoptics.pmts.pyg4_pmt_attach_air_absorption_length(
                 _pmt_air, self.g4_registry
@@ -546,7 +572,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _air.add_element_massfraction(self.get_element("O"), massfraction=0.23)
         _air.add_element_massfraction(self.get_element("Ar"), massfraction=0.013)
 
-        if self.enable_optical:
+        if _air.name in self.enable_optical:
             pygeomoptics.pmts.pyg4_pmt_attach_air_rindex(_air, self.g4_registry)
 
         return _air
@@ -567,7 +593,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _borosilicate.add_element_massfraction(self.get_element("Na"), 0.029)
         _borosilicate.add_element_massfraction(self.get_element("Al"), 0.012)
 
-        if self.enable_optical:
+        if _borosilicate.name in self.enable_optical:
             pygeomoptics.pmts.pyg4_pmt_attach_borosilicate_rindex(
                 _borosilicate, self.g4_registry
             )
@@ -592,7 +618,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _ultem.add_element_natoms(self.get_element("O"), natoms=6)
         _ultem.add_element_natoms(self.get_element("N"), natoms=2)
 
-        if self.enable_optical:
+        if _ultem.name in self.enable_optical:
             pygeomoptics.ultem.pyg4_ultem_attach_rindex(_ultem, self.g4_registry)
             pygeomoptics.ultem.pyg4_ultem_attach_absorption(_ultem, self.g4_registry)
 
@@ -611,7 +637,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _silica.add_element_natoms(self.get_element("Si"), natoms=1)
         _silica.add_element_natoms(self.get_element("O"), natoms=2)
 
-        if self.enable_optical:
+        if _silica.name in self.enable_optical:
             pygeomoptics.silica.pyg4_silica_attach_rindex(_silica, self.g4_registry)
 
         return _silica
@@ -662,7 +688,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
     def epoxy(self) -> g4.Material:
         """Material for the potted base of the PMT."""
         _epoxy = g4.Material(
-            name="potted_base",
+            name="epoxy",
             density=1.1,
             number_of_components=3,
             registry=self.g4_registry,
