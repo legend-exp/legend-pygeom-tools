@@ -479,8 +479,8 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         _water.add_element_natoms(self.get_element("H"), natoms=2)
         _water.add_element_natoms(self.get_element("O"), natoms=1)
 
-        if (
-            "water" in self.enable_optical
+        if ("water" in self.enable_optical) or (
+            _water.name in self.enable_optical
         ):  # G4 name is "Water" (Geant4 Rayleigh), property name is "water"
             pygeomoptics.water.pyg4_water_attach_rindex(_water, self.g4_registry)
             pygeomoptics.water.pyg4_water_attach_absorption(_water, self.g4_registry)
