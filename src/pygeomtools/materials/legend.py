@@ -61,6 +61,13 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             )
         else:
             self.enable_optical = set(enable_optical)
+            defined_materials = {
+                name for name in self.__class__.__dict__ if not name.startswith("_")
+            } | {"Water"}
+            undefined_optical_materials = self.enable_optical - defined_materials
+            if undefined_optical_materials != set():
+                msg = f"unknown materials specified in enable_optical: {undefined_optical_materials!r}"
+                raise ValueError(msg)
 
     @cached_property
     def liquidargon(self) -> g4.Material:
