@@ -40,10 +40,28 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
     if scenes is None:
         scenes = {}
 
+    # if this option is set, do not use the interactor style (interactive=False below),
+    # and directly trigger an export below.
+    export_and_exit = scenes.get("export_and_exit")
+
+    if export_and_exit:
+        # force headless (offscreen) rendering. this has to happen _before_ the render
+        # window is created, so the graphics factory picks an offscreen-capable window
+        # class (EGL or OSMesa, depending on the VTK build). do not force Mesa classes:
+        # they do not exist on EGL-only builds (e.g. the PyPI vtk wheels) and cause a
+        # segfault.
+        vtk.vtkGraphicsFactory().SetOffScreenOnlyMode(1)
+
     try:
         v = pyg4vis.VtkViewerColouredNew(defaultCutters=False, axisCubeWidget=False)
     except TypeError:
         v = pyg4vis.VtkViewerColouredNew()
+
+    if export_and_exit:
+        # enable offscreen rendering before any Render() call happens (e.g. via
+        # _set_camera_scene below), otherwise the render hits the X server and segfaults
+        # on headless machines.
+        v.renWin.SetOffScreenRendering(1)
 
     if scenes.get("export_transparent", False):
         v.renWin.SetAlphaBitPlanes(1)  # enable alpha channel
@@ -127,10 +145,6 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
             v, light_pos=light.get("pos"), shadow=light.get("shadow", True)
         )
 
-    # if this option is set, do not use the interactor style (interactive=False below),
-    # and directly trigger an export below.
-    export_and_exit = scenes.get("export_and_exit")
-
     if not export_and_exit:
         # override the interactor style.
         v.interactorStyle = _KeyboardInteractor(v.ren, v.iren, v, scenes)
@@ -142,14 +156,6 @@ def visualize(registry: g4.Registry, scenes: dict | None = None, points=None) ->
 
     if "window_size" in scenes:
         v.renWin.SetSize(*scenes["window_size"])
-
-    if export_and_exit:
-        # force a headless mode.
-        graphics_factory = vtk.vtkGraphicsFactory()
-        graphics_factory.SetOffScreenOnlyMode(1)
-        graphics_factory.SetUseMesaClasses(1)
-
-        v.renWin.SetOffScreenRendering(1)
 
     v.view(interactive=export_and_exit is None)
 
