@@ -103,3 +103,28 @@ def test_viewer_cli(tmp_path, points_file):
             str(geom),
         ]
     )
+
+
+def test_viewer_headless_export(tmp_path):
+    """Smoke test for the headless PNG export path on EGL-only VTK builds."""
+    registry = gdml.Reader(Path(__file__).parent / "geometry.gdml").getRegistry()
+
+    output_file = tmp_path / "headless.png"
+    output_file.unlink(missing_ok=True)
+
+    viewer.visualize(
+        registry,
+        {
+            "window_size": [200, 300],
+            "export_and_exit": output_file,
+            "default": {
+                "up": [0, 0, 1],
+                "camera": [-2000, 2000, 2000],
+                "focus": [0, 0, 0],
+                "parallel": False,
+            },
+        },
+    )
+
+    assert output_file.exists()
+    assert output_file.stat().st_size > 0
