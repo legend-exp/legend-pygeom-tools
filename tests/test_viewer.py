@@ -5,10 +5,27 @@ from pathlib import Path
 
 import lh5
 import pytest
+import vtk
 from lgdo import Array, Table, VectorOfVectors
 from pyg4ometry import gdml
 
 from pygeomtools import viewer
+
+
+def _offscreen_gl_available() -> bool:
+    """Return True if the VTK build can render offscreen (EGL or OSMesa)."""
+    try:
+        vtk.vtkGraphicsFactory().SetOffScreenOnlyMode(1)
+        ren_win = vtk.vtkRenderWindow()
+        ren_win.SetOffScreenRendering(1)
+        ren_win.AddRenderer(vtk.vtkRenderer())
+        ren_win.SetSize(16, 16)
+        ren_win.Render()
+        ok = bool(ren_win.GetOffScreenRendering())
+        ren_win.Finalize()
+        return ok
+    except Exception:
+        return False
 
 
 @pytest.fixture
@@ -27,6 +44,35 @@ def points_file(tmp_path):
     lh5.write(tab, "stp/test", file, wo_mode="of")
 
     return str(file)
+
+
+@pytest.mark.skipif(
+    not _offscreen_gl_available(),
+    reason="no offscreen GL backend (EGL/OSMesa) available",
+)
+def test_viewer_headless_export(tmp_path):
+    """Smoke test for the headless PNG export path on EGL-only VTK builds."""
+    registry = gdml.Reader(Path(__file__).parent / "geometry.gdml").getRegistry()
+
+    output_file = tmp_path / "headless.png"
+    output_file.unlink(missing_ok=True)
+
+    viewer.visualize(
+        registry,
+        {
+            "window_size": [200, 300],
+            "export_and_exit": output_file,
+            "default": {
+                "up": [0, 0, 1],
+                "camera": [-2000, 2000, 2000],
+                "focus": [0, 0, 0],
+                "parallel": False,
+            },
+        },
+    )
+
+    assert output_file.exists()
+    assert output_file.stat().st_size > 0
 
 
 def test_viewer(tmp_path, points_file):
