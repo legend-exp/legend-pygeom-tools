@@ -64,3 +64,31 @@ def test_legend_registry():
         assert isinstance(prop, property)
         m = getattr(mat, name)
         assert isinstance(m, g4.Material)
+
+
+def test_legend_registry_optical():
+    # we should get all optical properties.
+    registry = g4.Registry()
+    mat = LegendMaterialRegistry(registry, enable_optical=True)
+
+    assert mat.liquidargon.properties != {}
+    assert mat.gaseousargon.properties != {}
+
+    # ...or none
+    registry = g4.Registry()
+    mat = LegendMaterialRegistry(registry, enable_optical=False)
+
+    assert mat.liquidargon.properties == {}
+    assert mat.gaseousargon.properties == {}
+
+    # ... or a mixture
+    registry = g4.Registry()
+    mat = LegendMaterialRegistry(registry, enable_optical=["liquidargon"])
+
+    assert mat.liquidargon.properties != {}
+    assert mat.gaseousargon.properties == {}
+
+    # and it should complain when enabling optics for unknown materials.
+    registry = g4.Registry()
+    with pytest.raises(ValueError, match="unknown materials"):
+        mat = LegendMaterialRegistry(registry, enable_optical=["solidargon"])
