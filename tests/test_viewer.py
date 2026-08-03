@@ -24,7 +24,7 @@ def _offscreen_gl_available() -> bool:
         ok = bool(ren_win.GetOffScreenRendering())
         ren_win.Finalize()
         return ok
-    except Exception:  # ignore: BLE001
+    except Exception:  # noqa: BLE001
         return False
 
 
