@@ -22,7 +22,7 @@ AUXKEY_DET = "RMG_detector"
 
 @dataclass
 class RemageDetectorInfo:
-    detector_type: Literal["optical", "germanium", "scintillator"]
+    detector_type: Literal["optical", "germanium", "scintillator", "calorimeter"]
     """``remage`` detector type."""
 
     uid: int
