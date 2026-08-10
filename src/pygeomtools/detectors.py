@@ -79,20 +79,23 @@ def generate_detector_macro(registry: g4.Registry, filename: str) -> None:
     if _get_rmg_detector_aux(registry, raise_on_missing=False) is not None:
         sensvols = get_all_sensvols(registry)
     else:
-        sensvols = {pv.name: det for pv, det in walk_detectors(registry)}
+        sensvols = {}
+        for pv, det in walk_detectors(registry):
+            sensvols[pv.name] = det
+            if pv.copyNumber != 0:
+                msg = "volumes with copy-numbers are currently not supported from the"
+                raise RuntimeError(msg)
 
     macro_lines = {}
-    for pv, det in sensvols.items():
-        if pv in macro_lines:
+    for pv_name, det in sensvols.items():
+        if pv_name in macro_lines:
             continue
-        mac = (
-            f"/RMG/Geometry/RegisterDetector {det.detector_type.title()} {pv} {det.uid}"
-        )
+        mac = f"/RMG/Geometry/RegisterDetector {det.detector_type.title()} {pv_name} {det.uid}"
         if det.allow_uid_reuse:
             mac += f" 0 {str(det.allow_uid_reuse).lower()}"
             if det.ntuple_name is not None:
                 mac += f" {det.ntuple_name}"
-        macro_lines[pv] = mac + "\n"
+        macro_lines[pv_name] = mac + "\n"
 
     macro_contents = "".join(macro_lines.values())
 
@@ -126,6 +129,10 @@ def write_detector_auxvals(registry: g4.Registry) -> None:
         group_aux = Auxiliary(AUXKEY_DET, key, registry)
 
         for pv, det in group:
+            if pv.copyNumber != 0:
+                msg = "volumes with copy-numbers are currently not supported from the"
+                raise RuntimeError(msg)
+
             if pv.name in written_pvs:
                 continue
             written_pvs.add(pv.name)
