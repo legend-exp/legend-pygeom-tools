@@ -567,6 +567,28 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         return _pmt_air
 
     @cached_property
+    def nitrogen_air(self) -> g4.Material:
+        """Material for the air buffer in the watertank."""
+        _nitrogen_air = g4.MaterialCompound(
+            name="nitrogen_air",
+            density=0.0012506,
+            number_of_components=1,
+            registry=self.g4_registry,
+        )
+
+        _nitrogen_air.add_element_natoms(self.get_element("N"), natoms=1)
+
+        if _nitrogen_air.name in self.enable_optical:
+            pygeomoptics.pmts.pyg4_pmt_attach_air_rindex(
+                _nitrogen_air, self.g4_registry
+            )
+            pygeomoptics.pmts.pyg4_pmt_attach_air_absorption_length(
+                _nitrogen_air, self.g4_registry
+            )
+
+        return _nitrogen_air
+
+    @cached_property
     def air(self) -> g4.Material:
         """Air material with refractive index."""
         _air = g4.Material(
