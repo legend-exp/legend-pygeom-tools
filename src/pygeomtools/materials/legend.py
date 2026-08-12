@@ -566,6 +566,7 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
 
         return _pmt_air
 
+    @cached_property
     def nitrogen_air(self) -> g4.Material:
         """Material for the air buffer in the watertank."""
         _nitrogen_air = g4.MaterialCompound(
