@@ -111,5 +111,5 @@ properties:
       focus:
         "$ref": "#/$defs/vector"
       parallel:
-        type: boolean
+        type: [number, boolean]
     additionalProperties: false
