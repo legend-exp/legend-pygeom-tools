@@ -50,6 +50,7 @@ def points_file(tmp_path):
     not _offscreen_gl_available(),
     reason="no offscreen GL backend (EGL/OSMesa) available",
 )
+@mark.filterwarnings("ignore:.*:DeprecationWarning")
 def test_viewer_headless_export(tmp_path):
     """Smoke test for the headless PNG export path on EGL-only VTK builds."""
     registry = gdml.Reader(Path(__file__).parent / "geometry.gdml").getRegistry()
@@ -75,6 +76,7 @@ def test_viewer_headless_export(tmp_path):
     assert output_file.stat().st_size > 0
 
 
+@mark.filterwarnings("ignore:.*:DeprecationWarning")
 def test_viewer(tmp_path, points_file):
     registry = gdml.Reader(Path(__file__).parent / "geometry.gdml").getRegistry()
 
@@ -116,6 +118,7 @@ def test_viewer(tmp_path, points_file):
     viewer.visualize(registry, vis_scene)
 
 
+@mark.filterwarnings("ignore:.*:DeprecationWarning")
 def test_viewer_cli(tmp_path, points_file):
     geom = Path(__file__).parent / "geometry.gdml"
 
