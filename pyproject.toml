@@ -54,7 +54,7 @@ write_to = "src/pygeomtools/_version.py"
 
 [project.optional-dependencies]
 all = [
-    "legend-pygeom-tools[docs,test]",
+    "legend-pygeom-tools[docs,test,usd]",
 ]
 docs = [
     "furo",
@@ -63,10 +63,14 @@ docs = [
     "sphinx-copybutton",
 ]
 test = [
+    "legend-pygeom-tools[usd]",
     "pre-commit",
     "pylegendtestdata",
     "pytest>=6.0",
     "pytest-cov",
+]
+usd = [
+    "pyg4ometry[usd]",
 ]
 
 [project.scripts]
