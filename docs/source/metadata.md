@@ -24,6 +24,20 @@ The structure resembles a nested dictionary, stored as follows (read
    └─ [...repeat...]
 ```
 
+An XML example that registers the volume `det_pv` under the id 101 and attaches
+some metadata:
+
+```xml
+<userinfo>
+  <auxiliary auxtype="RMG_detector" auxvalue="germanium">
+    <auxiliary auxtype="det_pv" auxvalue="101"/>
+  </auxiliary>
+  <auxiliary auxtype="RMG_detector_meta" auxvalue="">
+    <auxiliary auxtype="det_pv" auxvalue='{"manufacturer": "D. Radford"}'/>
+  </auxiliary>
+</userinfo>
+```
+
 ## Coloring for visualization
 
 The color is directly attached as auxiliary data to the logical volumes:
