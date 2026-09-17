@@ -39,6 +39,32 @@ You can then use `remage -g geom.gdml region-overlay.gdml`.
 
 :::
 
+## XML format
+
+The auxiliary structure that defines the regions in a GDML file is only sparsely
+documented by Geant4, so we will add some notes about it here.
+
+```xml
+<userinfo>
+  <!-- ... -->
+  <auxiliary auxtype="Region" auxvalue="source">
+    <auxiliary auxtype="volume" auxvalue="source_inner_Th228" />
+    <auxiliary auxtype="volume" auxvalue="source_outer" />
+    <auxiliary auxtype="volume" auxvalue="cu_absorber" />
+    <auxiliary auxtype="volume" auxvalue="cu_absorber_lar_inactive" />
+
+    <auxiliary auxtype="ulimits" auxvalue="">
+      <auxiliary auxtype="uekinMin" auxvalue="1000" auxunit="GeV" />
+    </auxiliary>
+
+    <auxiliary auxtype="pcut" auxvalue="0.1" auxunit="mm" />
+    <auxiliary auxtype="ecut" auxvalue="0.1" auxunit="mm" />
+    <auxiliary auxtype="poscut" auxvalue="0.1" auxunit="mm" />
+    <auxiliary auxtype="gamcut" auxvalue="0.1" auxunit="mm" />
+  </auxiliary>
+</userinfo>
+```
+
 [^cuts_per_region]:
     https://geant4-userdoc.web.cern.ch/UsersGuides/ForApplicationDeveloper/html/TrackingAndPhysics/cutsPerRegion.html
 
