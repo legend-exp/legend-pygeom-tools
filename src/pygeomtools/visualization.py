@@ -10,6 +10,12 @@ log = logging.getLogger(__name__)
 
 
 def _color_macro_recursive(lv: g4.LogicalVolume, macro_lines: dict) -> None:
+    """Generate color macro lines.
+
+    .. deprecated:: 0.8.0
+        generating a color macro is not strictly necessary any more for recent *remage*
+        versions.
+    """
     if hasattr(lv, "pygeom_color_rgba") and lv.name not in macro_lines:
         mac = f"/vis/geometry/set/forceSolid {lv.name}\n"
         if lv.pygeom_color_rgba is False or lv.pygeom_color_rgba[3] == 0:
@@ -32,6 +38,10 @@ def generate_color_macro(registry: g4.Registry, filename: str) -> None:
         <pyg4ometry.geant4.LogicalVolume.pygeom_color_rgba>`, and not the values already
         written to the auxiliary structure in the GDML file. Use
         :func:`load_color_auxvals_recursive` to load these values, if necessary.
+
+    .. deprecated:: 0.8.0
+        generating a color macro is not strictly necessary any more for recent *remage*
+        versions.
     """
     macro_lines: dict[str, str | None] = {registry.worldVolume.name: None}
     _color_macro_recursive(registry.worldVolume, macro_lines)
