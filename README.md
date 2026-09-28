@@ -15,4 +15,5 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15094869.svg)](https://doi.org/10.5281/zenodo.15094869)
 
 Python tools to handle Monte Carlo simulation geometry using
-[pyg4ometry](https://pypi.org/project/pyg4ometry/).
+[pyg4ometry](https://pypi.org/project/pyg4ometry/) for
+[_remage_](https://remage.readthedocs.io/en/stable/).

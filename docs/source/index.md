@@ -1,7 +1,11 @@
 # Welcome to legendtools's documentation!
 
-This package provides shared code for the pyg4ometry-based Monte Carlo
-geometries for the LEGEND-200 and LEGEND-1000 experiments.
+This package provides shared code for pyg4ometry-based Monte Carlo geometries
+used with [_remage_](https://remage.readthedocs.io/en/stable/). Additionally it
+contains shared code for the
+[LEGEND-200](https://legend-pygeom-l200.readthedocs.io/en/stable/) and
+[LEGEND-1000](https://legend-pygeom-l1000.readthedocs.io/en/stable/)
+experimental geometries based on this stack.
 
 ## For geometry writers
 
