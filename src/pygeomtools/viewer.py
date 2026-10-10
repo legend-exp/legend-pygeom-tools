@@ -408,6 +408,67 @@ def _load_points(
     return np.array(cols).T
 
 
+def export_usd(
+    registry: g4.Registry,
+    filename: str | Path,
+    scenes: dict | None = None,
+    merge_by_material: bool = True,
+) -> None:
+    """Write the geometry to a USD file, or to a usdz package if *filename* ends in ``.usdz``.
+
+    Colours are taken from :attr:`pygeom_color_rgba
+    <pyg4ometry.geant4.LogicalVolume.pygeom_color_rgba>` and the scene's ``color_overrides``,
+    as in :func:`visualize`. A volume that either of them hides is written fully transparent,
+    because USD keeps its geometry in the file in any case.
+
+    Parameters
+    ----------
+    registry
+        registry instance containing the geometry to write.
+    filename
+        output file. A ``.usdz`` suffix writes the single file that viewers on phones and
+        tablets read, any other suffix a plain USD layer.
+    scenes
+        loaded :ref:`scene definition file <scene-file>`. Only ``color_overrides`` is read: the
+        camera, the clipper and the points have no meaning in an exported file.
+    merge_by_material
+        combine the volumes into one mesh per colour. Viewers on phones and tablets compile a
+        shader for every material they are given, so a geometry of a few thousand volumes takes
+        minutes to appear without this. The volume names and the hierarchy are lost.
+    """
+    load_color_auxvals_recursive(registry.worldVolume)
+    registry.worldVolume.pygeom_color_rgba = False  # hide the wireframe of the world.
+    _usd_color_recursive(
+        registry.worldVolume, (scenes or {}).get("color_overrides", {}), set()
+    )
+
+    viewer = pyg4vis.UsdViewer(str(filename), mergeByMaterial=merge_by_material)
+    viewer.traverseHierarchy(registry.worldVolume)
+    viewer.save()
+
+
+def _usd_color_recursive(lv: g4.LogicalVolume, overrides: dict, seen: set) -> None:
+    """Give every volume the visualisation options the USD shader is written from."""
+    if lv.name in seen:
+        return
+    seen.add(lv.name)
+
+    color = _color_override_matches(overrides, lv.name)
+    if color is None:
+        color = getattr(lv, "pygeom_color_rgba", None)
+    if color is False:  # hidden, so keep it in the file but let it show nothing
+        color = (0, 0, 0, 0)
+    if color is not None:
+        # VisualisationOptions copies these into the USD shader options for us
+        lv.visOptions = pyg4vis.VisualisationOptions(
+            colour=list(color[:3]), alpha=color[3]
+        )
+
+    for pv in lv.daughterVolumes:
+        if pv.type == "placement":
+            _usd_color_recursive(pv.logicalVolume, overrides, seen)
+
+
 def _color_override_matches(overrides: dict, name: str):
     for pattern, color in overrides.items():
         if re.match(f"{pattern}$", name):
@@ -520,6 +581,11 @@ def vis_gdml_cli(args: list[str] | None = None) -> None:
     )
 
     parser.add_argument(
+        "--usd",
+        help="""export to this USD or usdz file instead of opening the viewer""",
+    )
+
+    parser.add_argument(
         "filename",
         help="""GDML file to visualize.""",
     )
@@ -557,6 +623,11 @@ def vis_gdml_cli(args: list[str] | None = None) -> None:
 
     log.info("loading GDML geometry from %s", parsed.filename)
     registry = gdml.Reader(parsed.filename).getRegistry()
+
+    if parsed.usd:
+        log.info("exporting USD geometry to %s", parsed.usd)
+        export_usd(registry, parsed.usd, scene)
+        return
 
     log.info("visualizing...")
     visualize(registry, scene, points)
