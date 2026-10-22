@@ -116,7 +116,7 @@ def get_global_extent(
     if not isinstance(lv, geant4.LogicalVolume):
         msg = f"cannot compute extent of {pv.name} with type {type(lv)}"
         raise TypeError(msg)
-    if getattr(lv, 'mesh', None) is None:
+    if getattr(lv, "mesh", None) is None:
         msg = f"logical volume {lv.name} has no mesh"
         raise RuntimeError(msg)
 
