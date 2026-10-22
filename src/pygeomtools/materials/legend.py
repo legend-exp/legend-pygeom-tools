@@ -714,6 +714,24 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         return _tyvek
 
     @cached_property
+    def jackodur(self) -> g4.Material:
+        """JACKODUR extruded polystyrene (XPS) foam, used as thermal insulation.
+
+        The density is the datasheet minimum of JACKODUR KF 300 Standard (EN 1602);
+        the grades range from about 30 to 50 kg/m3 (ETA-17/0950).
+        """
+        _jackodur = g4.Material(
+            name="jackodur",
+            density=0.030,  # g/cm3
+            number_of_components=2,
+            registry=self.g4_registry,
+        )
+        _jackodur.add_element_natoms(self.get_element("C"), natoms=8)
+        _jackodur.add_element_natoms(self.get_element("H"), natoms=8)
+
+        return _jackodur
+
+    @cached_property
     def epoxy(self) -> g4.Material:
         """Material for the potted base of the PMT."""
         _epoxy = g4.Material(
