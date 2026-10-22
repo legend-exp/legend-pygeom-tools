@@ -331,5 +331,5 @@ def print_volumes(
         msg = f"unknown volume type {which}"
         raise ValueError(msg)
 
-    table = pd.DataFrame.from_dict(lines).set_index("name").sort_index()
+    table = pd.DataFrame(lines).set_index("name").sort_index()
     print(table.to_string())  # noqa: T201
