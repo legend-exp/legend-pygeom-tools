@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # note: do not load viewer module here, as it has quite large nested imports. see lazy loading below.
-from . import detectors, geometry, materials, utils, visualization
+from . import detectors, geometry, materials, transform, utils, visualization
 from ._version import version as __version__
 from .detectors import (
     RemageDetectorInfo,
@@ -26,6 +26,7 @@ __all__ = [
     "get_sensvol_by_uid",
     "get_sensvol_metadata",
     "materials",
+    "transform",
     "utils",
     "viewer",  # lazy import!
     "visualization",
