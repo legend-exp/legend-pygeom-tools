@@ -262,6 +262,50 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
         return _metal_copper
 
     @cached_property
+    def metal_aluminium(self) -> g4.Material:
+        """Aluminium."""
+        _metal_aluminium = g4.Material(
+            name="metal_aluminium",
+            density=2.70,
+            number_of_components=1,
+            registry=self.g4_registry,
+        )
+        _metal_aluminium.add_element_natoms(self.get_element("Al"), natoms=1)
+
+        return _metal_aluminium
+
+    @cached_property
+    def metal_aluminium_2011T8(self) -> g4.Material:
+        """Aluminium alloy EN AW-2011 T8 (AlCu6BiPb)."""
+        elemental_composition = {"Cu": 6.0, "Pb": 0.4, "Bi": 0.4, "Al": 93.2}
+
+        _metal_aluminium_2011T8 = g4.Material(
+            name="metal_aluminium_2011T8",
+            density=2.84,
+            number_of_components=len(elemental_composition),
+            registry=self.g4_registry,
+        )
+        for element, massfraction in elemental_composition.items():
+            _metal_aluminium_2011T8.add_element_massfraction(
+                self.get_element(element), massfraction=massfraction / 100
+            )
+
+        return _metal_aluminium_2011T8
+
+    @cached_property
+    def metal_lead(self) -> g4.Material:
+        """Lead."""
+        _metal_lead = g4.Material(
+            name="metal_lead",
+            density=11.35,
+            number_of_components=1,
+            registry=self.g4_registry,
+        )
+        _metal_lead.add_element_natoms(self.get_element("Pb"), natoms=1)
+
+        return _metal_lead
+
+    @cached_property
     def metal_phosphor_bronze(self) -> g4.Material:
         """Copper structures."""
         _metal_phbr = g4.Material(
@@ -449,6 +493,20 @@ class LegendMaterialRegistry(BaseMaterialRegistry):
             pygeomoptics.nylon.pyg4_nylon_attach_absorption(_nylon, self.g4_registry)
 
         return _nylon
+
+    @cached_property
+    def hdpe(self) -> g4.Material:
+        """High-density polyethylene (e.g. HD1000)."""
+        _hdpe = g4.Material(
+            name="hdpe",
+            density=0.93,
+            number_of_components=2,
+            registry=self.g4_registry,
+        )
+        _hdpe.add_element_natoms(self.get_element("C"), natoms=2)
+        _hdpe.add_element_natoms(self.get_element("H"), natoms=4)
+
+        return _hdpe
 
     @cached_property
     def pen(self) -> g4.Material:

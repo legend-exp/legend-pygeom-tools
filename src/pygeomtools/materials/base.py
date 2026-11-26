@@ -66,3 +66,4 @@ class BaseMaterialRegistry(ABC):  # noqa: B024
         self._add_element(name="Tantalum", symbol="Ta", z=73, a=180.94)
         self._add_element(name="Gold", symbol="Au", z=79, a=196.967)
         self._add_element(name="Lead", symbol="Pb", z=82, a=207.2)
+        self._add_element(name="Bismuth", symbol="Bi", z=83, a=208.98)
