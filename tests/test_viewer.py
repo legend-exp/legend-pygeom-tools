@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import zipfile
 from pathlib import Path
 
 import lh5
@@ -152,3 +153,39 @@ def test_viewer_cli(tmp_path, points_file):
             str(geom),
         ]
     )
+
+
+def test_export_usd(tmp_path):
+    """The export writes a usdz that carries the scene's colours."""
+    pytest.importorskip("pxr")
+    from pxr import Usd, UsdGeom, UsdShade
+
+    out = tmp_path / "geometry.usdz"
+    registry = gdml.Reader(str(Path(__file__).parent / "geometry.gdml")).getRegistry()
+    viewer.export_usd(registry, out, {"color_overrides": {"Box": [1, 0, 0, 1]}})
+
+    assert out.exists()
+    assert zipfile.is_zipfile(out)
+
+    stage = Usd.Stage.Open(str(out))
+    # a usdz package needs exactly one root prim, and viewers place the default one
+    assert len(stage.GetPseudoRoot().GetChildren()) == 1
+    assert stage.GetDefaultPrim()
+    assert UsdGeom.GetStageMetersPerUnit(stage) == 1
+    assert UsdGeom.GetStageUpAxis(stage) == UsdGeom.Tokens.z
+
+    colors = {}
+    for prim in stage.Traverse():
+        if not prim.IsA(UsdGeom.Mesh):
+            continue
+        assert UsdGeom.Mesh(prim).GetSubdivisionSchemeAttr().Get() == "none"
+        material = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial()[0]
+        shader = UsdShade.Shader(material.GetPrim().GetChild("PreviewShader"))
+        colors[tuple(shader.GetInput("diffuseColor").Get())] = shader.GetInput(
+            "opacity"
+        ).Get()
+
+    # merging leaves one mesh per colour, far fewer than the ten volumes
+    assert len(colors) < len(registry.logicalVolumeDict)
+    assert colors[(1, 0, 0)] == 1.0, "the override should reach the shader"
+    assert colors[(0, 0, 0)] == 0.0, "the world is hidden, so fully transparent"

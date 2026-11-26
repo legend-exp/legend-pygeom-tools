@@ -170,3 +170,36 @@ The option `export_and_exit` can be used for offscreen rendering without an X11
 server being available.
 
 :::
+
+## Exporting to USD
+
+```console
+$ legend-pygeom-vis --usd geometry.usdz geometry.gdml
+```
+
+writes the geometry to a file instead of opening the viewer. A `.usdz` suffix
+writes the single file that viewers on phones and tablets read, and any other
+suffix a plain USD layer, which [usdview](https://openusd.org) and 3D asset
+packages such as Blender open.
+
+The colours are the ones the viewer uses, so `color_overrides` from a scene file
+applies here too:
+
+```console
+$ legend-pygeom-vis --scene scene.yaml --usd geometry.usdz geometry.gdml
+```
+
+The rest of the scene file has no meaning in an exported file and is ignored.
+
+Volumes sharing a colour are combined into one mesh. Viewers on phones and
+tablets compile a shader for every material they are handed, so a LEGEND
+geometry takes minutes to appear without this, and the volume names and the
+hierarchy do not survive it. Call {func}`pygeomtools.viewer.export_usd` with
+`merge_by_material=False` to keep them.
+
+:::{note}
+
+A volume hidden by `color_overrides` or by `pygeom_color_rgba` is written fully
+transparent rather than left out: USD keeps its geometry in the file either way.
+
+:::
